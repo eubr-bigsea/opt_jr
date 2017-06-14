@@ -18,6 +18,49 @@
 
 #include "utilities.h"
 
+char * LundstromPredictor(int nValue, char * appId)
+{
+
+struct Best best;
+
+
+/* Get best configuration */
+	    best = bestMatch(
+	    		parseConfigurationFile("RESULTS_HOME", 1),
+	    		nValue);
+
+	    char cmd[1024];
+	    char parameters[64];
+	    char _nNodes[8];
+	    char _nCores[8];
+
+	    sprintf(_nNodes, "%d", best.nNodes);
+	    sprintf(_nCores, "%d", best.nCores);
+
+	    strcpy(parameters, _nNodes);
+	    strcat(parameters, " ");
+
+		strcat(parameters, _nCores);
+		strcat(parameters, " ");
+
+		strcat(parameters, best.datasize);
+		strcat(parameters, " ");
+
+		strcat(parameters, best.method);
+		strcat(parameters, " ");
+		strcat(parameters, appId);
+
+	    strcpy(cmd, "cd ");
+	    strcat(cmd, parseConfigurationFile("LUNDSTROM_HOME", 1));
+	    strcat(cmd, ";");
+	    strcat (cmd, "python run.py ");
+	    strcat(cmd, parameters);
+	    printf("cmd = %s\n", cmd);
+
+	    return _run(cmd);
+
+}
+
 void howAmIInvoked(char** argv, int argc)
 {
 	int i;
@@ -45,16 +88,24 @@ char * extractWord(char * source, int position)
 {
 
 	char *dest = malloc(16);
-	int  i = 0;
+	int  i = 0, j=0;
+	int cont;
+	char sep;
 
-	if (position == 2) source = strstr(source, "_") + 1;
-	while (source[i] != '_')
+
+	sep = '_';
+	for (cont=1; cont<= position; cont++)
 	{
-		dest[i] = source[i];
+		while (source[i] != sep && i < strlen(source))
+		{
+			if (cont == position) dest[j++] = source[i];
+			i++;
+		}
 		i++;
 	}
 
-	dest[i] = '\0';
+	dest[j] = '\0';
+
 	return dest;
 
 }
@@ -178,7 +229,7 @@ FILE * fp;
 }
 
 
-struct Best bestMatch(char * path, int nNodesInput, int nCoresInput, int modality)
+struct Best bestMatch(char * path, int nValue)
 {
 	int dir_count = 0;
 	    struct dirent* dent;
@@ -188,6 +239,9 @@ struct Best bestMatch(char * path, int nNodesInput, int nCoresInput, int modalit
 	    int diff;
 	    int savenCores;
 	    int savenNodes;
+	    char datasize[16];
+	    char method[16];
+
 	    struct Best best;
 
 
@@ -214,13 +268,15 @@ struct Best bestMatch(char * path, int nNodesInput, int nCoresInput, int modalit
 	        {
 	        	nNodes = atoi(extractWord(dent->d_name, 1));
 	        	nCores = atoi(extractWord(dent->d_name, 2));
-	        	if (modality == COUPLE) diff = abs(nNodesInput - nNodes);
-	        	else diff = abs(nNodesInput - nNodes * nCores);
+	        	//diff = abs(nValue - nNodes * nCores);
+	        	diff = abs(nValue - nCores);
 	        	if (min > diff)
 	        	{
 	        		min = diff;
 	        		savenNodes = nNodes;
 	        		savenCores = nCores;
+	        		strcpy(datasize, extractWord(dent->d_name, 3));
+	        		strcpy(method, extractWord(dent->d_name, 4));
 	        	}
 	        	dir_count++;
 	        }
@@ -229,12 +285,15 @@ struct Best bestMatch(char * path, int nNodesInput, int nCoresInput, int modalit
 
 	    best.nNodes = savenNodes;
 	    best.nCores = savenCores;
+	    strcpy(best.datasize, datasize);
+	    strcpy(best.method, method);
+
 
         return best;
 }
 
 
-int _run(char * cmd)
+char * _run(char * cmd)
 {
 	FILE *fp;
 	  char path[1035];
@@ -254,7 +313,7 @@ int _run(char * cmd)
 	  /* close */
 	  pclose(fp);
 
-	  return 0;
+	  return path;
 }
 
 
