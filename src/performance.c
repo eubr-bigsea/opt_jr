@@ -145,6 +145,7 @@ int main(int argc, char **argv)
      */
     nu_1 = N/(1 + tot);
     DBinsertrow(conn, argv[1], app_id1, nu_1);
+    LundstromPredictor(nu_1, app_id1);
 
     //readList(first);
 
@@ -171,8 +172,11 @@ int main(int argc, char **argv)
 
         csi = getCsi(M/m, V/v, 1/1000);
 
+        float nu_i = nu_1*sqrt((w/w1)*(chi_C/chi_c_1)*(csi_1/csi));
         //addResult(&rFirst, &rCurrent, rows, nu_1*sqrt((w/w1)*(chi_C/chi_c_1)*(csi_1/csi)), current->app_id);
-        DBinsertrow(conn, argv[1], current->app_id, nu_1*sqrt((w/w1)*(chi_C/chi_c_1)*(csi_1/csi)));
+        DBinsertrow(conn, argv[1], current->app_id, nu_i);
+
+        LundstromPredictor(nu_i, current->app_id);
         free(current);
         rows++;
      }
@@ -185,63 +189,12 @@ int main(int argc, char **argv)
 
     DBclose(conn);
 
-    if (argc == 3 ) return 0; /* Lundstrom is not invoked */
+    //if (argc == 3 ) return 0; /* Lundstrom is not invoked */
 
     /* Invoke Lundstrom */
 
-    if (argc < 7) Usage();
 
-    int nNodesInput = atoi(argv[3]);// This can be nNodes or nNodes * nCores
-    int nCoresInput; // This may be missing acording to the syntax
-    if (argc == 8) nCoresInput = atoi(argv[4]);
-    struct Best best;
-    int flag;
-    if (argc == 8) flag = COUPLE; else flag = PRODUCT;
-    /* Get best configuration */
-    best = bestMatch(
-    		parseConfigurationFile("RESULTS_HOME", NOXML),
-    		nNodesInput,
-		    nCoresInput,
-			PRODUCT);
 
-    char cmd[1024];
-    char parameters[32];
-    char _nNodes[8];
-    char _nCores[8];
-
-    sprintf(_nNodes, "%d", best.nNodes);
-    sprintf(_nCores, "%d", best.nCores);
-
-    strcpy(parameters, _nNodes);
-    strcat(parameters, " ");
-
-	strcat(parameters, _nCores);
-	strcat(parameters, " ");
-    if (argc == 8)
-    {
-    	strcat(parameters, argv[5]);
-    	strcat(parameters, " ");
-    	strcat(parameters, argv[6]);
-    	strcat(parameters, " ");
-    	strcat(parameters, argv[7]);
-    }
-    else
-    {
-    	strcat(parameters, argv[4]);
-    	strcat(parameters, " ");
-    	strcat(parameters, argv[5]);
-    	strcat(parameters, " ");
-    	strcat(parameters, argv[6]);
-    }
-
-    printf("Parameters %s\n", parameters);
-    strcpy(cmd, "cd ");
-    strcat(cmd, parseConfigurationFile("LUNDSTROM_FOLDER", NOXML));
-    strcat(cmd, ";");
-    strcat(cmd, "python run.py ");
-    strcat(cmd, parameters);
-
-    _run(cmd);
 
     // This return code is tested by the caller
     // Any value different than 0 will fire an exception
