@@ -12,11 +12,11 @@ Usage:
 
 where:
 
-<filename.csv> is the csv file (including the input values) under $UPLOAD_HOME in wsi_config.xml
+filename.csv is the csv file (including the input values) under $UPLOAD_HOME in wsi_config.xml
 
-<N> is the total number of cores
+N is the total number of cores
 
-<Limit> is the maximum number of considered candidates (if equal to 0, all the candidates are considered
+Limit is the maximum number of considered candidates (if equal to 0, all the candidates are considered
 
 -d represents debug (on/off)
 
