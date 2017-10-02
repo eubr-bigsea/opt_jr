@@ -9,11 +9,8 @@
 #define SRC_DB_H_
 #include <my_global.h>
 #include <mysql.h>
+#include "common.h"
 
-void DBerror(MYSQL *, char * );
-MYSQL * DBopen(char * , char * , char *, char * );
-void DBclose(MYSQL *conn);
-void DBinsertrow(MYSQL * , char *, char *, float );
 
 
 
