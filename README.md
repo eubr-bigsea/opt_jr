@@ -12,13 +12,13 @@ Usage:
 
 where:
 
-filename.csv is the csv file (including the input values) under $UPLOAD_HOME in wsi_config.xml
+filename.csv is the csv file (including the application profiling values) under $UPLOAD_HOME in wsi_config.xml;
 
-N is the total number of cores
+N is the total number of cores;
 
-Limit is the maximum number of considered candidates (if equal to 0, all the candidates are considered
+Limit is the maximum number of considered candidates (if equal to 0, all the candidates are considered) for which it is interesting to invoke the performance predictor;
 
--d represents debug (on/off)
+-d represents the debug option (on/off)
 
 -i represents the maximum number of iterations
 
