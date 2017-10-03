@@ -1,20 +1,23 @@
 CC=gcc
-CFLAGS=-I/usr/include/mysql 
+CFLAGS=-I/usr/include/mysql -g
 
-optimize : list.o performance.o utilities.o db.o
-	$(CC) -o optimize list.o performance.o db.o utilities.o -lm -lmysqlclient
+OPT_JR : list.o main.o utilities.o db.o localSearch.o
+        $(CC) -o OPT_JR list.o main.o db.o utilities.o localSearch.o -lm -lmysqlclient
 
-list.o : src/list.c src/list.h 
-	$(CC) -c src/list.c
+localSearch.o : src/localSearch.c src/localSearch.h
+        $(CC) $(CFLAGS) -c src/localSearch.c
 
-db.o : src/db.c src/db.h 
-	$(CC) $(CFLAGS) -c src/db.c
+list.o : src/list.c src/list.h
+        $(CC) $(CFLAGS) -c src/list.c
 
-performance.o : src/performance.c 
-	$(CC) $(CFLAGS) -c src/performance.c
+db.o : src/db.c src/db.h
+        $(CC) $(CFLAGS) -c src/db.c
+
+main.o : src/main.c
+        $(CC) $(CFLAGS) -c src/main.c
 
 utilities.o : src/utilities.c src/utilities.h
-	$(CC) -c src/utilities.c
+        $(CC) $(CFLAGS) -c src/utilities.c
 
 clean :
-	rm optimize db.o performance.o list.o utilities.o
+        rm OPT_JR localSearch.o db.o main.o list.o utilities.o
