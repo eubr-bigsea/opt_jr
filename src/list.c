@@ -145,8 +145,8 @@ void writeList(MYSQL *conn, char * dbName, sList *pointer, struct optJrParameter
 		sprintf(sqlStatement, "insert %s.OPT_SESSIONS_RESULTS_TABLE "
 				"values('%s', '%s',%d, %d)",
 				dbName,
-				strcat(par.filename,pointer->session_app_id),
-				pointer->app_id,
+				par.filename,
+				pointer->session_app_id,
 				pointer->currentCores_d,
 				pointer->vm
 			);
