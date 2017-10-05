@@ -1,24 +1,25 @@
 #!/bin/bash
-
-
-FILE=~/wsi_config.xml
+abs_script=`readlink -e $0`
+dir_script=`dirname $abs_script`
+DB_IP=${DB_IP:-"localhost"}
+WSI_IP=${WSI_IP:-"localhost"}
+FILE=${FILE:-~/wsi_config.xml}
 if [ -f $FILE ]; then
-	WSI_IP="localhost"
 	WSI_PORT="8080" 
         #
 	# Get User
         #
-        temp=$(cat ~/wsi_config.xml|grep OptDB_user)
+        temp=$(cat ${FILE}|grep OptDB_user)
         USER=$(echo $temp| awk -v FS="(>|<)" '{print $3}')
         #
         # Get password
         #
-        temp=$(cat ~/wsi_config.xml|grep OptDB_pass)
+        temp=$(cat ${FILE}|grep OptDB_pass)
         PASSWORD=$(echo $temp| awk -v FS="(>|<)" '{print $3}')
         #
         # Get DBNAME
         #
-        temp=$(cat ~/wsi_config.xml|grep OptDB_dbName)
+        temp=$(cat ${FILE}|grep OptDB_dbName)
         DB=$(echo $temp| awk -v FS="(>|<)" '{print $3}')
 	# 
 	# Build temp mysql configuraton file
@@ -28,7 +29,7 @@ if [ -f $FILE ]; then
 	echo "[client]" > $TEMPFILE
 	echo "user=$USER" >> $TEMPFILE
 	echo "password=$PASSWORD" >> $TEMPFILE
-	echo "host=$WSI_IP" >> $TEMPFILE 
+	echo "host=$DB_IP" >> $TEMPFILE 
 	echo "database=$DB" >> $TEMPFILE
 	APP_IDS=("application_1483347394756_0" \
              "application_1483347394756_1" \
@@ -52,8 +53,8 @@ echo ""
 	COUNTER=0
 	while [  $COUNTER -lt ${NUMCALLS} ]; do
 		echo Setting ${APP_IDS[COUNTER]}
-    		weight=$(./execute.sh ${APP_IDS[COUNTER]}|awk '{print $1}')
-    		deadline=$(./execute.sh ${APP_IDS[COUNTER]}|awk '{print $2}')
+    		weight=$(${dir_script}/execute.sh ${APP_IDS[COUNTER]}|awk '{print $1}')
+    		deadline=$(${dir_script}/execute.sh ${APP_IDS[COUNTER]}|awk '{print $2}')
     		curl -X POST -H "Content-Type: text/plain" -d "${APP_IDS[COUNTER]} $weight $deadline ${STAGES[COUNTER]} ${NS[COUNTER]}" "http://${WSI_IP}:${WSI_PORT}/WSI/session/setparams?SID=${SID}"	
     		let COUNTER=COUNTER+1 
 		echo ""
