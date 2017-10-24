@@ -26,7 +26,7 @@
 #define DAGSIM 0
 #define LUNDSTROM 1
 
-#define ARGS 8 // Command line
+#define ARGS 9 // Command line
 
 #define FILENAME "-f="
 #define NUM_N "-n="
@@ -35,6 +35,7 @@
 #define MAX_ITERATIONS "-i="
 #define SIMULATOR "-s="
 #define GLOBAL_FO_CALCULATION "-g"
+#define NUMBER_OF_THREADS "-t"
 
 #define NUMBER 0
 #define STRING 1
@@ -68,6 +69,8 @@ struct Best bestMatch(char *, int);
 void  Bound(sConfiguration *, MYSQL *conn, sList *, struct optJrParameters, int);
 
 void  calculate_Nu(sConfiguration *, MYSQL *, sList *,  struct optJrParameters);
+void calculateBounds(sList * pointer, int n_threads, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par);
+
 float computeBeta(sAlphaBetaManagement );
 float computeAlpha(sAlphaBetaManagement , float );
 void commitAssignment(sList *, char *,  double, struct optJrParameters );

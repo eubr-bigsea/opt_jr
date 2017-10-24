@@ -20,6 +20,7 @@ struct optJrParameters
 	int simulator;
 	int number;
 	int maxIterations;
+	int numberOfThreads;
 };
 
 

@@ -934,88 +934,50 @@ char * replace(char * text, char *newLine)
 
 
 struct optJrParameters parseCommandLine(char **args, int argc)
-
 {
-
-
-
 	if (argc != ARGS) Usage();
-
-
 
 	struct optJrParameters par;
 
-
-
 	for (int i = 0; i < ARGS; i++)
 		if (strstr(args[i], FILENAME)) strcpy(par.filename, parseArg(args[i], FILENAME, STRING));
-
 		else if (strstr(args[i], NUM_N)) par.number = atoi(parseArg(args[i], NUM_N, NUMBER));
-
 				else if (strstr(args[i], LIST_LIMIT)) par.K = atoi(parseArg(args[i], LIST_LIMIT, NUMBER));
-
 					else if (strstr(args[i], DEBUG)) par.debug = atoi(parseArg(args[i], DEBUG, YES_NO));
-
-
 							else if (strstr(args[i], SIMULATOR))
 							{
 									if (strcmp(parseArg(args[i], FILENAME, STRING), "dagSim") == 0) par.simulator = DAGSIM;
 															else par.simulator = LUNDSTROM;
 							}
-
 								else if (strstr(args[i], GLOBAL_FO_CALCULATION)) par.globalFOcalculation = atoi(parseArg(args[i], GLOBAL_FO_CALCULATION, YES_NO));
-								else if (strstr(args[i], MAX_ITERATIONS))
-									par.maxIterations = atoi(parseArg(args[i], MAX_ITERATIONS, NUMBER));
-
-
+								else if (strstr(args[i], NUMBER_OF_THREADS)) par.numberOfThreads = atoi(parseArg(args[i], NUM_N, NUMBER));
+									else if (strstr(args[i], MAX_ITERATIONS))
+										par.maxIterations = atoi(parseArg(args[i], MAX_ITERATIONS, NUMBER));
 	return par;
-
-
 
 }
 
 
 
 char * parseArg(char * string, char * gap, int type)
-
 {
-
 	switch(type)
-
 	{
-
 		case NUMBER:
-
 		case STRING:
-
 			return string + strlen(gap);
-
 			break;
-
 		case YES_NO:
-
 			if (strstr(string + strlen(gap), "y") || strstr(string + strlen(gap), "Y")) return "1";
-
 			else if (strstr(string + strlen(gap), "n") || strstr(string + strlen(gap), "N")) return "0";
-
 				else Usage();
-
 			break;
-
 		default:
-
 			printf("Fatal Error: parseArg: option not recognized\n");
-
 			exit(-1);
 
 	}
-
-
-
 	return NULL;
-
-
-
 }
 
 

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <omp.h>
 #include "localSearch.h"
 #include "db.h"
 
@@ -317,7 +318,6 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 				sprintf(cmd, "%s/%s/", path, subfolder);
 				sprintf(cmd, "%s*.lua", cmd);
 				strcpy(lua, ls(cmd, par));
-
 
 				char pattern[64];
 
@@ -1011,7 +1011,7 @@ void calculate_Nu(sConfiguration * configuration, MYSQL *conn, sList *first, str
 
 	while (current != NULL)
 	{
-		findBound(configuration, conn, getConfigurationValue(configuration, "OptDB_dbName"), current, par);
+		//findBound(configuration, conn, getConfigurationValue(configuration, "OptDB_dbName"), current, par);
 		if (rows > 0)
 		{
 			csi = getCsi(current->M/current->m, current->V/current->v);
@@ -1054,4 +1054,43 @@ void calculate_Nu(sConfiguration * configuration, MYSQL *conn, sList *first, str
 }
 
 
+void calculateBounds(sList * pointer, int n_threads, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par)
+{
+	printf("\n\n*************** Calculate bounds for each application *************** \n\n");
 
+	sList* t_pointer[n_threads];
+	MYSQL *conn2[n_threads];
+	for (int i =0; i< n_threads;++i)
+	{
+		t_pointer[i]=pointer;
+		conn2[i]=DBopen(
+								getConfigurationValue(configuration, "OptDB_IP"),
+						getConfigurationValue(configuration, "OptDB_user"),
+						getConfigurationValue(configuration, "OptDB_pass"),
+						getConfigurationValue(configuration, "OptDB_dbName")
+						);
+	}
+ 	//call findbound in parallel;
+	#pragma omp parallel num_threads(n_threads)
+	{
+		int ID=omp_get_thread_num();
+		int j=0;
+
+		while(t_pointer[ID]!=NULL )// assign each app to a thread
+		{
+			int pos=j%n_threads;
+			printf("\n\n<debug message>: pos= %d, j=%d, ID=%d\n\n\n", pos,j,ID);
+
+			if(pos==ID)
+			{
+				printf("\n<debug message>: findBound of app number %d called from thread %d\n",j,ID);
+
+				findBound(configuration, conn2[ID], getConfigurationValue(configuration, "OptDB_dbName"), t_pointer[ID], par);
+			}
+			t_pointer[ID]=t_pointer[ID]->next;
+			++j;
+		}
+	}
+	printf("\n\n*************** End calculate bounds ***************** \n\n");
+
+}

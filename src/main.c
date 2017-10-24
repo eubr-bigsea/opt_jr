@@ -49,7 +49,9 @@ int main(int argc, char **argv)
 
     par = parseCommandLine(argv, argc);
 
+
     int rows = 1;
+
 
     struct timeval  tv_initial_main,
     				tv_initial_nu,
@@ -64,6 +66,7 @@ int main(int argc, char **argv)
 
 
     sConfiguration *configuration = readConfigurationFile();
+
 
     /* Connect to the db */
     MYSQL *conn = DBopen(
@@ -169,6 +172,8 @@ int main(int argc, char **argv)
      * -	Find the bounds
      */
     calculate_Nu(configuration, conn, first,  par);
+    calculateBounds(first, par.numberOfThreads, configuration, conn, par);
+
 /*
     while (first!=NULL)
     {
@@ -216,12 +221,10 @@ int main(int argc, char **argv)
 
 
 
+
+
     // This return code is tested by the caller
     // Any value different than 0 will fire an exception
     return 0;
 
 }
-
-
-
-
