@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-I/usr/include/mysql -g
 
 OPT_JR : list.o main.o utilities.o db.o localSearch.o
-	$(CC) -o OPT_JR list.o main.o db.o utilities.o localSearch.o -lm -lmysqlclient
+	$(CC) -fopenmp -o OPT_JR list.o main.o db.o utilities.o localSearch.o -lm -lmysqlclient
 
 localSearch.o : src/localSearch.c src/localSearch.h
 	$(CC) $(CFLAGS) -c src/localSearch.c
