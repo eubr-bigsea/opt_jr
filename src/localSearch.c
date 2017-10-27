@@ -1011,7 +1011,7 @@ void calculate_Nu(sConfiguration * configuration, MYSQL *conn, sList *first, str
 
 	while (current != NULL)
 	{
-		//findBound(configuration, conn, getConfigurationValue(configuration, "OptDB_dbName"), current, par);
+		findBound(configuration, conn, getConfigurationValue(configuration, "OptDB_dbName"), current, par);
 		if (rows > 0)
 		{
 			csi = getCsi(current->M/current->m, current->V/current->v);
@@ -1054,7 +1054,7 @@ void calculate_Nu(sConfiguration * configuration, MYSQL *conn, sList *first, str
 }
 
 
-void calculateBounds(sList * pointer, int n_threads, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par)
+void MPI_calculateBounds(sList * pointer, int n_threads, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par)
 {
 	printf("\n\n*************** Calculate bounds for each application *************** \n\n");
 

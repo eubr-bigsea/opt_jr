@@ -129,7 +129,7 @@ sList * searchApplication(sList * first, char *session_appId)
  * 		Output parameters:		Pointer to the first application
  * 		Description:			This function prints the information about all the applications in the list. It is used for debug only.
  *
- */
+ 
 
 
 void writeList(MYSQL *conn, char * dbName, sList *pointer, struct optJrParameters par)
@@ -142,6 +142,7 @@ void writeList(MYSQL *conn, char * dbName, sList *pointer, struct optJrParameter
 
 	while (pointer!=NULL)
 	{
+		
 		sprintf(sqlStatement, "insert %s.OPT_SESSIONS_RESULTS_TABLE "
 				"values('%s', '%s',%d, %d)",
 				dbName,
@@ -150,12 +151,70 @@ void writeList(MYSQL *conn, char * dbName, sList *pointer, struct optJrParameter
 				pointer->currentCores_d,
 				pointer->vm
 			);
+	sprintf(debugMsg, sqlStatement);debugInformational(debugMsg, par);
 		if (mysql_query(conn, sqlStatement))
 		{
 				char error[512];
 				sprintf(error, " %s", sqlStatement);
 				DBerror(conn, error);
 		}
+		pointer = pointer->next;
+	}
+	sprintf(debugMsg, "\n");debugMessage(debugMsg, par);
+}
+*/
+void writeList(MYSQL *conn, char * dbName, sList *pointer, struct optJrParameters par)
+{
+	char debugMsg[DEBUG_MSG];
+	char sqlStatement[512];
+
+	sprintf(debugMsg, "\n\nApplications list content:\n");debugInformational(debugMsg, par);
+
+
+	while (pointer!=NULL)
+	{
+		/* Check if the result of the computation has been already stored */
+		sprintf(sqlStatement, "select * from %s.OPT_SESSIONS_RESULTS_TABLE where opt_id='%s' and app_id='%s'", dbName,par.filename,
+											pointer->session_app_id
+											);
+		MYSQL_ROW row = executeSQL(conn, sqlStatement, par);
+		if (row == NULL)
+		{
+			sprintf(sqlStatement, "insert %s.OPT_SESSIONS_RESULTS_TABLE values('%s', '%s',%d, %d)",
+								dbName,
+								par.filename,
+								pointer->session_app_id,
+								pointer->currentCores_d,
+								pointer->vm
+						);
+			if (mysql_query(conn, sqlStatement))
+			{
+
+				char error[512];
+				sprintf(error, " %s", sqlStatement);
+				DBerror(conn, error);
+			}
+		}
+		else /* Perform an update */
+		{
+			sprintf(sqlStatement, "update %s.OPT_SESSIONS_RESULTS_TABLE set opt_id = '%s', app_id = '%s',num_cores = %d, num_vm = %d where opt_id='%s' and app_id='%s'",
+											dbName,
+											par.filename,
+											pointer->session_app_id,
+											pointer->currentCores_d,
+											pointer->vm,
+											par.filename,
+											pointer->session_app_id
+									);
+			if (mysql_query(conn, sqlStatement))
+						{
+
+							char error[512];
+							sprintf(error, " %s", sqlStatement);
+							DBerror(conn, error);
+						}
+		}
+
 		pointer = pointer->next;
 	}
 	sprintf(debugMsg, "\n");debugMessage(debugMsg, par);

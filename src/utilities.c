@@ -759,7 +759,7 @@ char * extractRowMatchingPattern(char *text, char *pattern)
 	line = strstr(text, pattern);
 	if (line == NULL)
 	{
-		printf("Fatal error: extractRowMatchingPattern: pattern %s was not found in predictor output file\n", pattern);
+		printf("Fatal error: extractRowMatchingPattern: pattern %s was not found in predictor output file %s\n", pattern, text);
 		exit(-1);
 	}
 	line = line + strlen(pattern) + 1;
@@ -950,7 +950,7 @@ struct optJrParameters parseCommandLine(char **args, int argc)
 															else par.simulator = LUNDSTROM;
 							}
 								else if (strstr(args[i], GLOBAL_FO_CALCULATION)) par.globalFOcalculation = atoi(parseArg(args[i], GLOBAL_FO_CALCULATION, YES_NO));
-								else if (strstr(args[i], NUMBER_OF_THREADS)) par.numberOfThreads = atoi(parseArg(args[i], NUM_N, NUMBER));
+								//else if (strstr(args[i], NUMBER_OF_THREADS)) par.numberOfThreads = atoi(parseArg(args[i], NUM_N, NUMBER));
 									else if (strstr(args[i], MAX_ITERATIONS))
 										par.maxIterations = atoi(parseArg(args[i], MAX_ITERATIONS, NUMBER));
 	return par;

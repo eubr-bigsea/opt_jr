@@ -172,7 +172,7 @@ int main(int argc, char **argv)
      * -	Find the bounds
      */
     calculate_Nu(configuration, conn, first,  par);
-    calculateBounds(first, par.numberOfThreads, configuration, conn, par);
+    //MPI_calculateBounds(first, par.numberOfThreads, configuration, conn, par);
 
 /*
     while (first!=NULL)

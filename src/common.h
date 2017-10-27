@@ -26,7 +26,7 @@
 #define DAGSIM 0
 #define LUNDSTROM 1
 
-#define ARGS 9 // Command line
+#define ARGS 8 // Command line
 
 #define FILENAME "-f="
 #define NUM_N "-n="
