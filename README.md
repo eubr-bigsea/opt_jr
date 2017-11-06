@@ -1,6 +1,8 @@
+OPT_JR is the application balancer used within the BIG SEA projects. It provides the best cores allocation to the invoking applications by performing a local neighborhood search. OPT_JR uses a predictor (dagSim) and relies on the initial solution provided by OPT_IC.
+
 Usage:
 
-./OPT_JR -f <filename.csv> -n <N> -k <Limit> -d <dY/y|N/n> -c <Y/y|N/n> -g=y -s <dagSim|lundstrom> -i <iterations> -t <threads_number>
+./OPT_JR -f <filename.csv> -n <N> -k <Limit> -d <Y/y|N/n> -c <Y/y|N/n> -g=y -s <dagSim|lundstrom> -i <iterations> -t <threads_number>
 
 where:
 
