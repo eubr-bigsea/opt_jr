@@ -18,5 +18,5 @@ where:
 Example:
 -f="Test1.csv" -n=150  -i=10 -k=0 -d=y -c=y -s=dagSim -g=Y -t=4
 
-In this case, OPT_JR is executed on a file Test3.csv, the total number of cores is 150, all the candidates are considered, the predictor used is dagSim, the maximum number of iterations is 10, the value of global objective function for each iteration will be printed in output and 4 threads are considered for multi-threading.
+In this case, OPT_JR is executed on a file Test1.csv, the total number of cores is 150, all the candidates are considered, the predictor used is dagSim, the maximum number of iterations is 10, the value of global objective function for each iteration will be printed in output and 4 threads are considered for multi-threading.
 
