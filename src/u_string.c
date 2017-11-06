@@ -6,7 +6,7 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include "common.h"
+#include "u_string.h"
 
 const int MAX_LINE_LENGTH = 1024;
 

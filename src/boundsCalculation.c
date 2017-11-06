@@ -7,8 +7,7 @@
 #include <mpi.h>
 #include <sys/time.h>
 
-#include "interpolation.h"
-#include "common.h"
+#include "boundsCalculation.h"
 
 /*
  * 		Name:				Bound

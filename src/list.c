@@ -279,10 +279,7 @@ void freeParameters(sApplication * pointer)
 			       pointer = pointer->next;
 			       free(tmp);
 			    }
-
 }
-
-
 
 
 /*
@@ -304,7 +301,6 @@ void freeCandidates(sCandidates * pointer)
 
 }
 
-
 void freeStatistics(sStatistics * pointer)
 {
 	sStatistics * tmp;
@@ -315,9 +311,7 @@ void freeStatistics(sStatistics * pointer)
 			       pointer = pointer->next;
 			       free(tmp);
 			    }
-
 }
-
 
 /*
  * 		Name:					findMinDelta
@@ -343,29 +337,13 @@ sCandidates * findMinDelta(sCandidates * pointer)
 	}
 	return minCandidate;
 }
-/*
- *
- */
-int checkTotalCores(sApplication * pointer, double N)
-{
-	int tot = 0;
 
-
-	while (pointer!= NULL)
-	{
-		printf("app %s currentCores %d", pointer->session_app_id, (int)pointer->currentCores_d);
-		tot = tot + pointer->currentCores_d;
-		pointer = pointer->next;
-	}
-	printf("\nTOTALE CORES :%d out of %lf\n", tot, N);
-	return doubleCompare(tot, N) == 0;
-}
 
 
 
 
 /*
- * 		Name:					addCandidateParameters
+ * 		Name:					addCandidates
  * 		Input parameters:		sCandidates ** first, sCandidates ** current,  char * app_id1, char * app_id2, int contr1, int contr2, double delta
  * 		Output parameters:		Updated pointers to the first and current element of the list
  * 		Description:			This function adds all the information regarding the localSearch deltafo calculation
@@ -425,8 +403,6 @@ void addCandidate(sCandidates ** first, sCandidates ** current,  sApplication * 
 }
 
 
-
-
 /*
  * 		Name:					addStatistics
  * 		Input parameters:		sStatistics ** first, sStatistics ** current, int iteration, int how_many
@@ -445,8 +421,6 @@ void addStatistics(sStatistics ** first, sStatistics ** current, int iteration, 
 		  exit(-1);
 	  }
 
-
-
 	  new->iteration = iteration;
 	  new->size = how_many;
 	  new->FO_Total = total;
@@ -456,7 +430,6 @@ void addStatistics(sStatistics ** first, sStatistics ** current, int iteration, 
 	  if (*first == NULL) *first = new;
 	  else (*current)->next = new;
 	  *current = new;
-
 
 }
 
@@ -564,11 +537,10 @@ void readStatistics(sStatistics *pointer, struct optJrParameters par)
 {
 	char debugMsg[DEBUG_MSG];
 
-
 	debugBanner("Statistics list content:", par);
 
-
-	printf("Iteration   List Size  Total FO\n");
+	if (par.numberOfThreads > 0) printf("(OpenMP: yes) Iteration   List Size  Total FO\n");
+	else printf("(OpenMP: no) Iteration   List Size  Total FO\n");
 	while (pointer!=NULL)
 	{
 		sprintf(debugMsg, "%d %d %lf", pointer->iteration, pointer->size, pointer->FO_Total);debugMessage(debugMsg, par);

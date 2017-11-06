@@ -12,13 +12,17 @@
 #include <mpi.h>
 #include <sys/time.h>
 
-#include "interpolation.h"
-#include "common.h"
+#include "localSearch.h"
 
 
 
-
-
+/*
+ * 		Name:					checkTotalNodes
+ * 		Input parameters:		int N, sApplication * pointer
+ * 		Output parameters:		TBD
+ * 		Description:			It checks that the total allocated nodes is still less or equal than the total number of cores available N
+ *
+ */
 
 void checkTotalNodes(int N, sApplication * pointer)
 {
@@ -60,27 +64,31 @@ void localSearch(sConfiguration * configuration, MYSQL *conn, sApplication * fir
 	sCandidates * minCandidate;
 	sStatistics *firstS = NULL, *currentS = NULL;
 
-for (int iteration = 1; iteration <= par.maxIterations; iteration++)
-{
-	sprintf(debugMsg, "ITERATION %d", iteration);debugBanner(debugMsg, par);
-
-	/* Estimate the candidates for the predictor */
-	sfirstCandidateApproximated = approximatedLoop(first, &how_many, par );
-	if (sfirstCandidateApproximated ==NULL)
+	for (int iteration = 1; iteration <= par.maxIterations; iteration++)
 	{
-		/* The Candidate Application is empty. No further solution enhancements possible */
-		debugInformational("LocalSearch: empty Candidate Application", par);
+		sprintf(debugMsg, "ITERATION %d", iteration);debugBanner(debugMsg, par);
 
-		/* Store on the db the results for all the applications */
-		writeResults(conn, getConfigurationValue(configuration, "OptDB_dbName"), first, par);
-		break;
+		/* Estimate the candidates for the predictor */
+		sfirstCandidateApproximated = approximatedLoop(first, &how_many, par );
+		if (sfirstCandidateApproximated ==NULL)
+		{
+			/* The Candidate Application is empty. No further solution enhancements possible */
+			debugInformational("LocalSearch: empty Candidate Application", par);
+
+			/* Store on the db the results for all the applications */
+			writeResults(conn, getConfigurationValue(configuration, "OptDB_dbName"), first, par);
+			break;
 	}
 
+	/* Copy the pointer to couple of application with smallest deltafo */
 	minCandidate = sfirstCandidateApproximated;
 	sprintf(debugMsg, " Ex-iteration loop");debugBanner(debugMsg, par);
 
-	/* Calculate in advance and in parallel the results of the predictor for each candidate */
-	//invokePredictorMPI(sfirstCandidateApproximated, par, configuration);
+	if (par.numberOfThreads > 0)
+	{
+		/* Calculate in advance and in parallel the results of the predictor for each candidate */
+		invokePredictorOpenMP(sfirstCandidateApproximated, par, configuration);
+	}
 
 		// To Do: consider only the first MAX_PROMISING_CONFIGURATIONS of the Application -> DONE
 		while (sfirstCandidateApproximated != NULL)
@@ -120,12 +128,19 @@ for (int iteration = 1; iteration <= par.maxIterations; iteration++)
 				/* Call object function evaluation calculated earlier*/
 				application_i->mode= R_ALGORITHM;application_j->mode= R_ALGORITHM;
 
-				 DELTA_fo_App_i = ObjFunctionComponent(configuration, conn, application_i, par) - application_i->baseFO;
-				 //double i = sfirstCandidateApproximated->real_i 								- application_i->baseFO;
+				if (par.numberOfThreads == 0)
+				{
+					/* No openmp */
+					DELTA_fo_App_i = ObjFunctionComponent(configuration, conn, application_i, par) - application_i->baseFO;
+					DELTA_fo_App_j = ObjFunctionComponent(configuration, conn, application_j, par) - application_j->baseFO;
+				}
+				else
+				{
+					/* OpenMP */
+					DELTA_fo_App_i = sfirstCandidateApproximated->real_i - application_i->baseFO;
+					DELTA_fo_App_j = sfirstCandidateApproximated->real_j - application_j->baseFO;
+				}
 				 sprintf(debugMsg, "app %s DELTA_fo_App_i %lf",application_i->session_app_id, DELTA_fo_App_i);debugMessage(debugMsg, par);
-
-				 DELTA_fo_App_j = ObjFunctionComponent(configuration, conn, application_j, par) - application_j->baseFO;
-				// double j  		= sfirstCandidateApproximated->real_j 							- application_j->baseFO;
 				 sprintf(debugMsg, "app %s DELTA_fo_App_j %lf",application_j->session_app_id, DELTA_fo_App_j);debugMessage(debugMsg, par);
 			}
 			// Restore previous number of cores

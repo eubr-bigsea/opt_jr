@@ -4,7 +4,8 @@
  *  Created on: Oct 31, 2017
  *      Author: work
  */
-#include "common.h"
+
+#include "u_debug.h"
 
 void debugBanner(char * string, struct optJrParameters par)
 {

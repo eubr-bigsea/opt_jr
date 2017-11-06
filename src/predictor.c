@@ -12,8 +12,8 @@
 #include <mpi.h>
 #include <sys/time.h>
 
+#include "predictor.h"
 
-#include "common.h"
 
 
 

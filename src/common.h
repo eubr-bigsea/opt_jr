@@ -62,9 +62,6 @@
 #define YES 1
 
 
-//-f="Test1.csv" --n=220  -k=0 -d=y -c=Y -s=dagSim -g=Y
-
-
 /* Templates */
 
 
@@ -87,6 +84,7 @@ float computeAlpha(sAlphaBetaManagement , float );
 void commitAssignment(sApplication *, char *,  double, struct optJrParameters );
 int checkTotalCores(sApplication * pointer, double N);
 
+void debugBanner(char * string, struct optJrParameters par);
 void debugMessage(char * string, struct optJrParameters par);
 void debugInformational(char * string, struct optJrParameters par);
 int doubleCompare(double, double);
@@ -94,7 +92,7 @@ void DBerror(MYSQL *, char * );
 MYSQL * DBopen(char * , char * , char *, char * );
 void DBclose(MYSQL *conn);
 void DBinsertrow(MYSQL * , char *, char *, float );
-void debugBanner(char * string, struct optJrParameters par);
+
 MYSQL_ROW executeSQL(MYSQL *, char *, struct optJrParameters);
 
 double elapsedTime(struct timeval , struct timeval );
@@ -119,7 +117,7 @@ double getCsi(double , double );
 
 void initialize(sConfiguration * configuration, MYSQL *conn, sApplication * application_i, struct optJrParameters par);
 char* invokePredictor(sConfiguration * , MYSQL *, int , int , char * , int ,  char *, char *, char *, struct optJrParameters, int);
-void invokePredictorMPI(sCandidates *sfirstCandidateApproximated, struct optJrParameters, sConfiguration *configuration);
+void invokePredictorOpenMP(sCandidates *sfirstCandidateApproximated, struct optJrParameters, sConfiguration *configuration);
 
 void localSearch(sConfiguration *, MYSQL *conn, sApplication *, int, int, struct optJrParameters);
 char * ls(char *, struct optJrParameters);
@@ -165,6 +163,9 @@ void Usage();
 
 void writeResults(MYSQL *conn, char *,sApplication *, struct optJrParameters);
 void writeFile(const char *, const char *);
+
+
+
 
 
 

@@ -8,20 +8,7 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
-
-
-
-#define NODES 0;
-
-
-
-
-
-
-
-
-
-
+#include "common.h"
 
 
 #endif /* MAIN_H_ */

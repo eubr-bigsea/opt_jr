@@ -13,7 +13,7 @@
 #include <mpi.h>
 #include <sys/time.h>
 
-#include "common.h"
+#include "objectiveFunction.h"
 
 
 /*
