@@ -5,27 +5,34 @@
 #include <float.h>
 #include <sys/time.h>
 
-#include "list.h"
+
 #include "common.h"
 
 
+void printOPT_JRPars(struct optJrParameters par )
+{
+	printf("N: %d\n", par.number);
+	printf("Filename: %s\n", par.filename);
+	printf("Candidates List Limit: %d\n", par.K);
+	printf("DEBUG option: %d\n", par.debug);
+	printf("Simulator: %d\n", par.predictor);
+	printf("Global FO calculation: %d\n", par.globalFOcalculation);
+}
 /*
- * 		Name:					addParameters
- * 		Input parameters:		int nApp, sList ** first, sList ** current,  char * app_id, double w, double chi_0, double chi_C, double chi_c_1, double m, double M, double V, double v, int D, double csi,
+ * 		Name:					addParameter
+ * 		Input parameters:		int nApp, sApplication ** first, sApplication ** current,  char * app_id, double w, double chi_0, double chi_C, double chi_c_1, double m, double M, double V, double v, int D, double csi,
 		double csi_1, char * StageId, int datasetSize
- * 		Output parameters:		Uodated pointers to the first and current element of the list
- * 		Description:			This function adds all the information regarding an application into a list
+ * 		Output parameters:		Updated pointers to the first and current element of the list
+ * 		Description:			This function adds all the information regarding an application into a weight-sorted list
  *
  */
-void addParameters(sList ** first,   sList ** current, char *session_app_id, char * app_id, double w, double chi_0, double chi_C, double m, double M, double V, double v, double Deadline_d, double csi,
+void addApplication(sApplication ** first,   sApplication ** current, char *session_app_id, char * app_id, double w, double chi_0, double chi_C, double m, double M, double V, double v, double Deadline_d, double csi,
 		char * StageId, int datasetSize)
 {
-
-
-	  sList *new = (sList*) malloc(sizeof(sList));
+	  sApplication *new = (sApplication*) malloc(sizeof(sApplication));
 	  if (new == NULL)
 	  {
-		  printf("addParameters: Fatal Error: malloc failure\n");
+		  printf("Fatal Error:addParameters:  malloc failure\n");
 		  exit(-1);
 	  }
 
@@ -33,7 +40,7 @@ void addParameters(sList ** first,   sList ** current, char *session_app_id, cha
 	  new->app_id = (char *)malloc(1024);
 	  if (new->app_id == NULL)
 	  {
-	  	  	    printf("addParameters: malloc failure\n");
+	  	  	    printf("Fatal Error:addParameters: malloc failure\n");
 	  	  	    exit(-1);
 	  }
 	  strcpy(new->app_id, app_id);
@@ -41,7 +48,7 @@ void addParameters(sList ** first,   sList ** current, char *session_app_id, cha
 	  new->session_app_id = (char *)malloc(1024);
 	  if (new->session_app_id == NULL)
 	  {
-	  	  	printf("addParameters: malloc failure\n");
+	  	  	printf("Fatal Error:addParameters: malloc failure\n");
 	  	  	exit(-1);
 	  }
 	  strcpy(new->session_app_id, session_app_id);
@@ -55,7 +62,8 @@ void addParameters(sList ** first,   sList ** current, char *session_app_id, cha
 	  new->Deadline_d = Deadline_d;
 	  new->csi = csi;
 	  new->boundIterations = 0;
-
+	  new->currentCores_d = 0;
+	  new->nCores_DB_d = 0;
 
 	  new->stage = (char *)malloc(1024);
 	  if (new->stage == NULL)
@@ -88,8 +96,8 @@ void addParameters(sList ** first,   sList ** current, char *session_app_id, cha
 	 	 	 		  }
 	 	 	 		  	 else
 	 	 	 			 {
-	 	 	 		  		sList * previous = *first;
-	 	 	 		  	sList * current = (*first)->next;
+	 	 	 		  		sApplication * previous = *first;
+	 	 	 		  	sApplication * current = (*first)->next;
 
 	 	 	 				 while (current != NULL && current->w < w)
 	 	 	 				 {
@@ -100,83 +108,34 @@ void addParameters(sList ** first,   sList ** current, char *session_app_id, cha
 	 	 	 				 previous->next = new;
 	 	 	 				 new->next = current;
 	 	 	 			 }
-
-
-
 }
 
 
 
-sList * searchApplication(sList * first, char *session_appId)
-{
-	while (first != NULL)
-	{
-		if (strcmp(first->session_app_id, session_appId) == 0) return first;
-		first = first->next;
-	}
-	if (first == NULL)
-	{
-		printf("Fatal Error: searchApplication: could not find session application id %s\n", session_appId);
-		exit(-1);
-	}
 
-	return NULL;
-}
 
 /*
- * 		Name:					writeList
- * 		Input parameters:		sList *pointer
+ * 		Name:					writeResults
+ * 		Input parameters:		sApplication *pointer
  * 		Output parameters:		Pointer to the first application
- * 		Description:			This function prints the information about all the applications in the list. It is used for debug only.
+ * 		Description:			This function prints the results of the localSearch application (number of cores and VM in a DB table.
+ * 								If a result for a (session_id, application_id) already exists, then it is replaced.
  *
- 
+ */
 
 
-void writeList(MYSQL *conn, char * dbName, sList *pointer, struct optJrParameters par)
+void writeResults(MYSQL *conn, char * dbName, sApplication *pointer, struct optJrParameters par)
 {
 	char debugMsg[DEBUG_MSG];
 	char sqlStatement[512];
 
-	sprintf(debugMsg, "\n\nApplications list content:\n");debugInformational(debugMsg, par);
-
-
-	while (pointer!=NULL)
-	{
-		
-		sprintf(sqlStatement, "insert %s.OPT_SESSIONS_RESULTS_TABLE "
-				"values('%s', '%s',%d, %d)",
-				dbName,
-				par.filename,
-				pointer->session_app_id,
-				pointer->currentCores_d,
-				pointer->vm
-			);
-	sprintf(debugMsg, sqlStatement);debugInformational(debugMsg, par);
-		if (mysql_query(conn, sqlStatement))
-		{
-				char error[512];
-				sprintf(error, " %s", sqlStatement);
-				DBerror(conn, error);
-		}
-		pointer = pointer->next;
-	}
-	sprintf(debugMsg, "\n");debugMessage(debugMsg, par);
-}
-*/
-void writeList(MYSQL *conn, char * dbName, sList *pointer, struct optJrParameters par)
-{
-	char debugMsg[DEBUG_MSG];
-	char sqlStatement[512];
-
-	sprintf(debugMsg, "\n\nApplications list content:\n");debugInformational(debugMsg, par);
-
+	debugBanner( "writeResults", par);
 
 	while (pointer!=NULL)
 	{
-		/* Check if the result of the computation has been already stored */
-		sprintf(sqlStatement, "select * from %s.OPT_SESSIONS_RESULTS_TABLE where opt_id='%s' and app_id='%s'", dbName,par.filename,
-											pointer->session_app_id
-											);
+		sprintf(debugMsg, "ApplicationId %s cores %d VMs %d\n", pointer->app_id, pointer->currentCores_d, pointer->vm);debugMessage(debugMsg, par);
+		/* Check if the result of the computation for that session, application has been already computed and stored previously */
+		sprintf(sqlStatement, "select * from %s.OPT_SESSIONS_RESULTS_TABLE ", dbName);
 		MYSQL_ROW row = executeSQL(conn, sqlStatement, par);
 		if (row == NULL)
 		{
@@ -189,7 +148,6 @@ void writeList(MYSQL *conn, char * dbName, sList *pointer, struct optJrParameter
 						);
 			if (mysql_query(conn, sqlStatement))
 			{
-
 				char error[512];
 				sprintf(error, " %s", sqlStatement);
 				DBerror(conn, error);
@@ -217,49 +175,42 @@ void writeList(MYSQL *conn, char * dbName, sList *pointer, struct optJrParameter
 
 		pointer = pointer->next;
 	}
-	sprintf(debugMsg, "\n");debugMessage(debugMsg, par);
+
 }
 
-void readList(sList *pointer, struct optJrParameters par)
+/*
+ * 		Name:					readApplication
+ * 		Input parameters:		sApplication *pointer, struct optJrParameters par
+ * 		Description:			It prints the details of all the applications
+*/
+void printApplications(sApplication *pointer, struct optJrParameters par)
 {
 	char debugMsg[DEBUG_MSG];
 
-	sprintf(debugMsg, "\n\nApplications list content:\n");debugInformational(debugMsg, par);
-
-
-	while (pointer!=NULL)
-	{
-		printRow(pointer, par);
-		//if (pointer->previous!=NULL) printf("(prev. %lf) ", pointer->previous->T);
-		pointer = pointer->next;
-	}
-	sprintf(debugMsg, "\n");debugMessage(debugMsg, par);
-}
-
-
-void readSolution(sList *pointer)
-{
+	sprintf(debugMsg, "Applications list content:");debugInformational(debugMsg, par);
 
 	while (pointer!=NULL)
 	{
-		printf("%s %d\n", pointer->session_app_id, pointer->currentCores_d);
+		printApplication(pointer, par);
 		pointer = pointer->next;
 	}
 
 }
 
 
-void printRow(sList *pointer, struct optJrParameters par)
+
+
+void printApplication(sApplication *pointer, struct optJrParameters par)
 {
 
 	char debugMsg[DEBUG_MSG];
 
-	sprintf(debugMsg, "session_app_id %s app_id %s  weight %d nu %lf iterations to find the bound %d currentcores = %d nCores from DB = %d \n\n",
+	sprintf(debugMsg, "session_app_id %s app_id %s  weight %d nu %lf iterations to find the bound %d currentcores = %d nCores from DB = %d",
 			pointer->session_app_id, pointer->app_id, pointer->w, pointer->nu_d, pointer->boundIterations, pointer->currentCores_d, (int)pointer->nCores_DB_d);debugMessage(debugMsg, par);
 
 }
 
-void commitAssignment(sList *pointer, char *session_appId,  double DELTA, struct optJrParameters par)
+void commitAssignment(sApplication *pointer, char *session_appId,  double DELTA, struct optJrParameters par)
 {
 	char debugMsg[DEBUG_MSG];
 
@@ -292,15 +243,15 @@ void commitAssignment(sList *pointer, char *session_appId,  double DELTA, struct
 
 
 /*
- * 		Name:					freeApplicationList
- * 		Input parameters:		sList *pointer
+ * 		Name:					freeApplications
+ * 		Input parameters:		sApplication *pointer
  * 		Output parameters:		Pointer to the first application
  * 		Description:			It releases the allocated memory for the list
  *
  */
-void freeApplicationList(sListPointers * pointer)
+void freeApplications(sApplicationPointers * pointer)
 {
-	sListPointers * tmp;
+	sApplicationPointers * tmp;
 
 
 		while (pointer != NULL)
@@ -312,15 +263,15 @@ void freeApplicationList(sListPointers * pointer)
 }
 
 /*
- * 		Name:					freeParametersList
- * 		Input parameters:		sList *pointer
+ * 		Name:					freeParameters
+ * 		Input parameters:		sApplication *pointer
  * 		Output parameters:		Pointer to the first application
  * 		Description:			It releases the allocated memory for the list
  *
  */
-void freeParametersList(sList * pointer)
+void freeParameters(sApplication * pointer)
 {
-	sList * tmp;
+	sApplication * tmp;
 
 	while (pointer != NULL)
 			    {
@@ -335,15 +286,15 @@ void freeParametersList(sList * pointer)
 
 
 /*
- * 		Name:					freeAuxList
- * 		Input parameters:		sAux *pointer
+ * 		Name:					freeCandidateList
+ * 		Input parameters:		sCandidates *pointer
  * 		Output parameters:		Pointer to the first application
  * 		Description:			It releases the allocated memory for the list
  *
  */
-void freeAuxList(sAux * pointer)
+void freeCandidates(sCandidates * pointer)
 {
-	sAux * tmp;
+	sCandidates * tmp;
 	while (pointer != NULL)
 			    {
 			       tmp = pointer;
@@ -354,7 +305,7 @@ void freeAuxList(sAux * pointer)
 }
 
 
-void freeStatisticsList(sStatistics * pointer)
+void freeStatistics(sStatistics * pointer)
 {
 	sStatistics * tmp;
 
@@ -370,15 +321,15 @@ void freeStatisticsList(sStatistics * pointer)
 
 /*
  * 		Name:					findMinDelta
- * 		Input parameters:		sAux *pointer
+ * 		Input parameters:		sCandidates *pointer
  * 		Output parameters:		Minimum Delta
  * 		Description:			It retrieves the minimum delta
  *
  */
-sAux * findMinDelta(sAux * pointer)
+sCandidates * findMinDelta(sCandidates * pointer)
 {
 	double min = DBL_MAX;
-	sAux *minAux = NULL;
+	sCandidates *minCandidate = NULL;
 
 
 	while (pointer != NULL)
@@ -386,16 +337,16 @@ sAux * findMinDelta(sAux * pointer)
 		if (doubleCompare(pointer->deltaFO, min) == -1)
 			{
 				min = pointer->deltaFO;
-				minAux = pointer;
+				minCandidate = pointer;
 			}
 		pointer = pointer->next;
 	}
-	return minAux;
+	return minCandidate;
 }
 /*
  *
  */
-int checkTotalCores(sList * pointer, double N)
+int checkTotalCores(sApplication * pointer, double N)
 {
 	int tot = 0;
 
@@ -414,32 +365,32 @@ int checkTotalCores(sList * pointer, double N)
 
 
 /*
- * 		Name:					addAuxParameters
- * 		Input parameters:		sAux ** first, sAux ** current,  char * app_id1, char * app_id2, int contr1, int contr2, double delta
+ * 		Name:					addCandidateParameters
+ * 		Input parameters:		sCandidates ** first, sCandidates ** current,  char * app_id1, char * app_id2, int contr1, int contr2, double delta
  * 		Output parameters:		Updated pointers to the first and current element of the list
  * 		Description:			This function adds all the information regarding the localSearch deltafo calculation
  *
  */
-void addAuxParameters(sAux ** first, sAux ** current,  sList * app1, sList * app2, int contr1, int contr2, double delta, double delta_i, double delta_j)
+void addCandidate(sCandidates ** first, sCandidates ** current,  sApplication * app_i, sApplication * app_j, int contr1, int contr2, double delta, double delta_i, double delta_j)
 {
 	if (contr1 < 0 || contr2 < 0)
 	{
-		printf("addAuxParameters: an application has a number of core <= 0\n");
+		printf("addCandidateParameters: an application has a number of core <= 0\n");
 		return;
 	}
 
-	  sAux *new = (sAux*) malloc(sizeof(sAux));
+	  sCandidates *new = (sCandidates*) malloc(sizeof(sCandidates));
 	  if (new == NULL)
 	  {
-		  printf("addAuxParameters: Fatal Error: malloc failure\n");
+		  printf("addCandidateParameters: Fatal Error: malloc failure\n");
 		  exit(-1);
 	  }
 
 
-	  new->app1 = app1;
-	  new->app2 = app2;
-	  new->newCoreAssignment1 = contr1;
-	  new->newCoreAssignment2 = contr2;
+	  new->app_i = app_i;
+	  new->app_j = app_j;
+	  new->newCoreAssignment_i = contr1;
+	  new->newCoreAssignment_j = contr2;
 	  new->deltaFO = delta;
 	  new->delta_i = delta_i;
 	  new->delta_j = delta_j;
@@ -459,8 +410,8 @@ void addAuxParameters(sAux ** first, sAux ** current,  sList * app1, sList * app
 	 	 	 		  }
 	 	 	 		  	 else
 	 	 	 			 {
-	 	 	 		  		sAux * previous = *first;
-	 	 	 		  		sAux * current = (*first)->next;
+	 	 	 		  		sCandidates * previous = *first;
+	 	 	 		  		sCandidates * current = (*first)->next;
 
 	 	 	 				 while (current != NULL && doubleCompare(current->deltaFO, delta) == -1)
 	 	 	 				 {
@@ -490,7 +441,7 @@ void addStatistics(sStatistics ** first, sStatistics ** current, int iteration, 
 	  sStatistics *new = (sStatistics*) malloc(sizeof(sStatistics));
 	  if (new == NULL)
 	  {
-		  printf("addAuxParameters: Fatal Error: malloc failure\n");
+		  printf("addCandidateParameters: Fatal Error: malloc failure\n");
 		  exit(-1);
 	  }
 
@@ -554,11 +505,12 @@ sConfiguration * readConfigurationFile()
 	    sConfiguration *first = NULL;
 	    sConfiguration *current = NULL;
 
-	    configurationFile = getenv("WSI_CONFIG_FILE");
+	    configurationFile = getenv("HOME");
+	    configurationFile = strcat(configurationFile, "/wsi_config.xml");
 
 	    if (configurationFile == NULL)
 	    {
-	    	printf("Fatal error: WSI_CONFIG_FILE environment variable was not defined.\n");
+	    	printf("Fatal error: parseConfigurationFile%s/wsi_config.xml configuration file not found.\n", getenv("HOME"));
 	    	exit(-1);
 	    }
 
@@ -612,25 +564,25 @@ void readStatistics(sStatistics *pointer, struct optJrParameters par)
 {
 	char debugMsg[DEBUG_MSG];
 
-	sprintf(debugMsg, " ");debugBanner(debugMsg, par);
-	sprintf(debugMsg, "\n\nStatistics list content:\n");debugMessage(debugMsg, par);
-	sprintf(debugMsg, " ");debugBanner(debugMsg, par);
+
+	debugBanner("Statistics list content:", par);
+
 
 	printf("Iteration   List Size  Total FO\n");
 	while (pointer!=NULL)
 	{
-		sprintf(debugMsg, "%d %d %lf\n", pointer->iteration, pointer->size, pointer->FO_Total);debugMessage(debugMsg, par);
+		sprintf(debugMsg, "%d %d %lf", pointer->iteration, pointer->size, pointer->FO_Total);debugMessage(debugMsg, par);
 
 		pointer = pointer->next;
 	}
-	sprintf(debugMsg, "\n");debugMessage(debugMsg, par);
+
 }
 
-void addListPointers(sListPointers ** first,   sList *application)
+void addApplicationPointer(sApplicationPointers ** first,   sApplication *application)
 {
 
 
-	  sListPointers *new = (sListPointers*) malloc(sizeof(sListPointers));
+	  sApplicationPointers *new = (sApplicationPointers*) malloc(sizeof(sApplicationPointers));
 	  if (new == NULL)
 	  {
 		  printf("addListPointers: Fatal Error: malloc failure\n");
@@ -656,8 +608,8 @@ void addListPointers(sListPointers ** first,   sList *application)
 	 	 	 	 		  }
 	 	 	 	 		  	 else
 	 	 	 	 			 {
-	 	 	 	 		  		sListPointers * previous = *first;
-	 	 	 	 		  		sListPointers * current = (*first)->next;
+	 	 	 	 		  		sApplicationPointers * previous = *first;
+	 	 	 	 		  		sApplicationPointers * current = (*first)->next;
 
 	 	 	 	 				 while (current != NULL && doubleCompare(current->app->w, application->w) == -1)
 	 	 	 	 				 {
@@ -672,7 +624,7 @@ void addListPointers(sListPointers ** first,   sList *application)
 }
 
 
-void readListPointers(sListPointers *pointer, struct optJrParameters par)
+void readApplicationPointers(sApplicationPointers *pointer, struct optJrParameters par)
 {
 	char debugMsg[DEBUG_MSG];
 
@@ -681,7 +633,7 @@ void readListPointers(sListPointers *pointer, struct optJrParameters par)
 
 	while (pointer!=NULL)
 	{
-		printRow(pointer->app, par);
+		printApplication(pointer->app, par);
 		pointer = pointer->next;
 	}
 	sprintf(debugMsg, "\n");debugMessage(debugMsg, par);
@@ -690,24 +642,24 @@ void readListPointers(sListPointers *pointer, struct optJrParameters par)
 
 
 /*
- * 		Name:					readAuxList
- * 		Input parameters:		sAux *pointer
+ * 		Name:					readCandidateList
+ * 		Input parameters:		sCandidates *pointer
  * 		Output parameters:		Pointer to the first application
  * 		Description:			This function prints the information about all the applications in the list. It is used for debug only.
  *
  */
 
 
-void readAuxList(sAux *pointer, struct optJrParameters par)
+void readCandidates(sCandidates *pointer, struct optJrParameters par)
 {
 	char debugMsg[DEBUG_MSG];
 
-	sprintf(debugMsg, "\n\nAuxiliary list content:\n");debugMessage(debugMsg, par);
+	sprintf(debugMsg, "\n\nCandidate application list content:\n");debugMessage(debugMsg, par);
 
 
 	while (pointer!=NULL)
 	{
-		printAuxRow(pointer, par);
+		printCandidate(pointer, par);
 		//printf("%lf\n", pointer->deltaFO);
 
 		pointer = pointer->next;
@@ -715,13 +667,13 @@ void readAuxList(sAux *pointer, struct optJrParameters par)
 	sprintf(debugMsg, "\n");debugMessage(debugMsg, par);
 }
 
-void printAuxRow(sAux *pointer, struct optJrParameters par)
+void printCandidate(sCandidates *pointer, struct optJrParameters par)
 {
 	char debugMsg[DEBUG_MSG];
-	printRow(pointer->app1, par);
-	printRow(pointer->app2, par);
-    sprintf(debugMsg, "newCoresAssignment1 = %d newCoresAssignment2 = %d Totdelta = %lf delta1 = %lf delta2 = %lf\n\n ",
-    		(int)pointer->newCoreAssignment1, (int)pointer->newCoreAssignment2,
+	printApplication(pointer->app_i, par);
+	printApplication(pointer->app_j, par);
+    sprintf(debugMsg, "newCoresAssignment1 = %d newCoresAssignment2 = %d Totdelta = %lf delta1 = %d delta2 = %d\n\n ",
+    		pointer->newCoreAssignment_i, pointer->newCoreAssignment_j,
 			pointer->deltaFO, pointer->delta_i, pointer->delta_j);debugMessage(debugMsg, par);
 }
 

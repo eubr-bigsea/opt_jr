@@ -8,34 +8,51 @@
 #ifndef SRC_COMMON_H_
 #define SRC_COMMON_H_
 
+#include "db.h"
+#include "list.h"
+
+
+
 #define DEBUG_MSG 512
+
+/* Number of values in the csv file */
+#define PARAMETERS 12
+
+#define R_ALGORITHM 0
+#define CORES_ALGORITHM 1
+#define NCORES_ALGORITHM 2
+
+
+
+#define BIG_LINE 4000
+#define BIG_TEXT 20000
 
 #define PRODUCT 2
 #define COUPLE 1
 
-#define WHOLE_DAGSIM 0
-#define RESIDUAL_DAGSIM 1
+#define WHOLE_EXECUTION_TIME 0
+#define RESIDUAL_EXECUTION_TIME 1
 
 #define FIRST_APP 0
 #define OTHER_APPS 1
 
 #define MAX_APP_LENGTH 1024
-#include "db.h"
-#include "list.h"
+
 
 #define DAGSIM 0
 #define LUNDSTROM 1
 
-#define ARGS 8 // Command line
+#define ARGS 10 // Command line
 
 #define FILENAME "-f="
 #define NUM_N "-n="
-#define LIST_LIMIT "-k="
+#define APPLICATIONS_LIMIT "-k="
 #define DEBUG "-d="
 #define MAX_ITERATIONS "-i="
 #define SIMULATOR "-s="
 #define GLOBAL_FO_CALCULATION "-g"
 #define NUMBER_OF_THREADS "-t"
+#define CACHE "-c"
 
 #define NUMBER 0
 #define STRING 1
@@ -44,37 +61,31 @@
 #define NO 0
 #define YES 1
 
-struct Best
-{
-	int nNodes;
-	int nCores;
-	char datasize[16];
-	char method[16];
-
-};
 
 //-f="Test1.csv" --n=220  -k=0 -d=y -c=Y -s=dagSim -g=Y
 
 
 /* Templates */
 
-void addCacheParameters(sPredictorCash ** , sPredictorCash ** ,  char * , int , int , double );
-void addListPointers(sListPointers ** ,  sList *);
+
+void addApplicationPointer(sApplicationPointers ** ,  sApplication *);
 void addStatistics(sStatistics ** , sStatistics ** , int , int, double );
-void addParameters(sList ** ,  sList **, char *, char *, double , double  , double , double , double , double , double , double , double, char *, int  );
-sAux * approximatedLoop(sList *, int *, struct optJrParameters );
-void addAuxParameters(sAux ** , sAux ** ,  sList * , sList * , int , int , double, double, double);
+void addApplication(sApplication ** ,  sApplication **, char *, char *, double , double  , double , double , double , double , double , double , double, char *, int  );
+sCandidates * approximatedLoop(sApplication *, int *, struct optJrParameters );
+void addCandidate(sCandidates ** , sCandidates ** ,  sApplication * , sApplication * , int , int , double, double, double);
 
 struct Best bestMatch(char *, int);
-void  Bound(sConfiguration *, MYSQL *conn, sList *, struct optJrParameters, int);
+void  Bound(sConfiguration *, MYSQL *conn, sApplication *, struct optJrParameters);
 
-void  calculate_Nu(sConfiguration *, MYSQL *, sList *,  struct optJrParameters);
-void calculateBounds(sList * pointer, int n_threads, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par);
+void  calculate_Nu(sConfiguration *, MYSQL *, sApplication *,  struct optJrParameters);
+void calculateMPIBounds(sApplication * pointer, int n_threads, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par);
+void calculateBounds(sApplication * pointer, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par);
+void checkTotalNodes(int N, sApplication * pointer);
 
 float computeBeta(sAlphaBetaManagement );
 float computeAlpha(sAlphaBetaManagement , float );
-void commitAssignment(sList *, char *,  double, struct optJrParameters );
-int checkTotalCores(sList * pointer, double N);
+void commitAssignment(sApplication *, char *,  double, struct optJrParameters );
+int checkTotalCores(sApplication * pointer, double N);
 
 void debugMessage(char * string, struct optJrParameters par);
 void debugInformational(char * string, struct optJrParameters par);
@@ -92,13 +103,13 @@ char * extractItem(const char *const string, const char *const left, const char 
 char * extractRowN(char *, int );
 char * extractRowMatchingPattern(char *text, char *pattern);
 
-sListPointers * fixInitialSolution(sList *applications,  struct optJrParameters);
-void findBound(sConfiguration *, MYSQL *conn, char *,  sList *, struct optJrParameters);
-void freeStatisticsList(sStatistics * );
-void freeParametersList(sList * pointer);
-void freeApplicationList(sListPointers * pointer);
-void freeAuxList(sAux * pointer);
-sAux * findMinDelta(sAux * );
+sApplicationPointers * fixInitialSolution(sApplication *applications,  struct optJrParameters);
+void findBound(sConfiguration *, MYSQL *conn, char *,  sApplication *, struct optJrParameters);
+void freeStatistics(sStatistics * );
+void freeParameters(sApplication * pointer);
+void freeApplications(sApplicationPointers * pointer);
+void freeCandidates(sCandidates * pointer);
+sCandidates * findMinDelta(sCandidates * );
 
 void howAmIInvoked(char **, int );
 
@@ -106,49 +117,53 @@ char * getfield(char* , int);
 char *getConfigurationValue(sConfiguration *pointer, char * variable);
 double getCsi(double , double );
 
-void initialize(sConfiguration * configuration, MYSQL *conn, sList * application_i, struct optJrParameters par);
+void initialize(sConfiguration * configuration, MYSQL *conn, sApplication * application_i, struct optJrParameters par);
 char* invokePredictor(sConfiguration * , MYSQL *, int , int , char * , int ,  char *, char *, char *, struct optJrParameters, int);
+void invokePredictorMPI(sCandidates *sfirstCandidateApproximated, struct optJrParameters, sConfiguration *configuration);
 
-void localSearch(sConfiguration *, MYSQL *conn, sList *, int, int, struct optJrParameters);
+void localSearch(sConfiguration *, MYSQL *conn, sApplication *, int, int, struct optJrParameters);
 char * ls(char *, struct optJrParameters);
 char * LundstromPredictor(sConfiguration *, int , char * , struct optJrParameters);
 
 double max(double, double);
 
-double ObjFunctionGlobal(sConfiguration *, MYSQL *conn, sList *, struct optJrParameters);
-int   ObjFunctionComponent(sConfiguration * ,MYSQL *, sList *,  struct optJrParameters );
-int   ObjFunctionComponentApprox(sList *, struct optJrParameters );
+double ObjFunctionGlobal(sConfiguration *, MYSQL *conn, sApplication *, struct optJrParameters);
+double   ObjFunctionComponent(sConfiguration * ,MYSQL *, sApplication *,  struct optJrParameters );
+double   ObjFunctionComponentApprox(sApplication *, struct optJrParameters );
 
 char * parseConfigurationFile(char *, int);
+sApplication * parseCsv(sConfiguration *configuration, struct optJrParameters par);
 struct optJrParameters parseCommandLine(char **args, int argc);
 char * parseArg(char * string, char * gap, int type);
 void printConfigurationFile(sConfiguration *pointer);
-void printCacheParameters(sPredictorCash * );
-void printRow(sList *, struct optJrParameters);
-void printAuxRow(sAux *, struct optJrParameters);
-void printRow(sList *, struct optJrParameters);
+
+void printApplications(sApplication *, struct optJrParameters);
+void printApplication(sApplication *, struct optJrParameters);
+void printCandidate(sCandidates *, struct optJrParameters);
 void printOPT_JRPars(struct optJrParameters par );
 
 sConfiguration * readConfigurationFile();
 void readStatistics(sStatistics *, struct optJrParameters);
-void writeList(MYSQL *conn, char *,sList *, struct optJrParameters);
-void readList(sList *, struct optJrParameters);
-void readAuxList(sAux *, struct optJrParameters);
-void readListPointers(sListPointers *, struct optJrParameters);
+
+
+void readCandidates(sCandidates *, struct optJrParameters);
+void readApplicationPointers(sApplicationPointers *, struct optJrParameters);
 char *readFolder(char *);
 char * replace(char * , char *);
 int read_line(FILE *, char *, size_t );
 char * readFile(char * );
-void readSolution(sList *pointer);
+void readSolution(sApplication *pointer);
+void restoreInitialBaseFO(sApplication * pointer, struct optJrParameters par);
 MYSQL_ROW retrieveTimeFromDBCash(MYSQL *conn, char *sessionId, char *appId, int datasize, int ncores );
 char * _run(char *,  struct optJrParameters );
 
-double searchCacheParameters(sPredictorCash * , char * , int , int );
 void split (char str[], int *a, int *b);
-sList * searchApplication(sList * , char *);
+sApplication * searchApplication(sApplication * , char *);
+void start(sConfiguration *, int , int , char **, int );
 
 void Usage();
 
+void writeResults(MYSQL *conn, char *,sApplication *, struct optJrParameters);
 void writeFile(const char *, const char *);
 
 

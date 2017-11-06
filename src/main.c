@@ -13,60 +13,36 @@
 #include <string.h>
 #include <math.h>
 #include <sys/time.h>
-#include "db.h"
-
-#include "list.h"
+#include "common.h"
 #include "main.h"
 
-
-
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
-
-
-
-
 
 int main(int argc, char **argv)
 {
 
-    double w;
-    double chi_0;
-    double chi_C;
-    double m;
-    double M;
-    double V;
-    double v;
-    double D;
-    double csi;
-    char * session_app_id;
-    char * app_id;
-    char * St;
-    int DatasetSize;
     double N;
-    char line[1024];
     struct optJrParameters par;
     char debugMsg[DEBUG_MSG];
+    struct timeval  tv_initial_main,
+						tv_initial_bounds,
+	        			tv_final_bounds,
+        				tv_initial_nu,
+        				tv_final_nu,
+    					tv_initial_init,
+    					tv_final_init,
+        				tv_initial_fix,
+        				tv_final_fix,
+        				tv_initial_locals,
+        				tv_final_locals,
+        				tv_final_main;
+
+    /* Parse the command line */
 
     par = parseCommandLine(argv, argc);
 
-
-    int rows = 1;
-
-
-    struct timeval  tv_initial_main,
-    				tv_initial_nu,
-    				tv_final_nu,
-					tv_initial_init,
-					tv_final_init,
-    				tv_initial_fix,
-    				tv_final_fix,
-    				tv_initial_locals,
-    				tv_final_locals,
-    				tv_final_main;
-
-
+    /* Upload the configuration file ($HOME/wsi_config.xml) into a list */
     sConfiguration *configuration = readConfigurationFile();
-
 
     /* Connect to the db */
     MYSQL *conn = DBopen(
@@ -81,13 +57,6 @@ int main(int argc, char **argv)
     gettimeofday(&tv_initial_main, NULL);
 
 
-    gettimeofday(&tv_initial_nu, NULL);
-    /*
-     * Find where the file has been uploaded and determine absolute file path
-     */
-    char *folder = getConfigurationValue(configuration, "UPLOAD_HOME");
-    char *filename = strcat(folder, "/");
-    filename = strcat(folder, par.filename);
 
     /*
      * Read total cores available
@@ -95,104 +64,30 @@ int main(int argc, char **argv)
     N = par.number;
     int MAX_PROMISING_CONFIGURATIONS = par.K;
 
+    /* Load applications details from csv file */
+    sApplication *first = parseCsv(configuration, par);
 
+    /* Calculate the bounds */
+        gettimeofday(&tv_initial_bounds, NULL);
+        calculateBounds(first, configuration, conn, par);
+        //calculateMPIBounds(first, par.numberOfThreads, configuration, conn, par);
+        gettimeofday(&tv_final_bounds, NULL);
+        printApplications(first, par);
 
-    FILE* stream = fopen(filename, "r");
-    if (stream == NULL)
-    {
-    	printf("FATAL ERROR: could not find or open %s\n", filename);
-    	exit(-1);
-    }
-
-
-    /*
-     * Initialize Vars
-     */
-    sList *first = NULL, *current = NULL;
-    session_app_id = (char *)malloc(MAX_APP_LENGTH);
-    if (session_app_id == NULL)
-    {
-          printf("session_app_id: malloc_failure in main\n");
-          exit(-1);
-    }
-
-    app_id = (char *)malloc(MAX_APP_LENGTH);
-    if (app_id == NULL)
-    {
-          printf("app_id: malloc_failure in main\n");
-          exit(-1);
-    }
-
-    St = (char *)malloc(1024);
-        if (St == NULL)
-        {
-            printf("app_id1: malloc_failure in main\n");
-            exit(-1);
-        }
-
-    /*
-      * Read the file and load all the parameters in a list.
-      * Calculate nu_1
-    */
-    while (fgets(line, MAX_LINE_LENGTH, stream))
-    {
-        char* tmp = strdup(line);
-
-        if ((strlen(line)==0) || (strstr(line, "#")==NULL)) // Skip if it's comment or empty line
-        {
-        	strcpy(session_app_id, getfield(tmp, _SESSION_APP_ID));tmp = strdup(line);
-        	strcpy(app_id, getfield(tmp, _APP_ID));tmp = strdup(line);
-        	w = 	atof(getfield(tmp, _W));tmp = strdup(line);
-        	chi_0 = atof(getfield(tmp, _CHI_0));tmp = strdup(line);
-        	chi_C = atof(getfield(tmp, _CHI_C));tmp = strdup(line);
-        	M = 	atof(getfield(tmp, _M));tmp = strdup(line);
-        	m = 	atof(getfield(tmp, _m));tmp = strdup(line);
-        	V = 	atof(getfield(tmp, _V));tmp = strdup(line);
-        	v = 	atof(getfield(tmp, _v));tmp = strdup(line);
-        	D = 	atoi(getfield(tmp, _D));tmp = strdup(line);
-        	strcpy(St, getfield(tmp, _St));tmp = strdup(line);
-        	DatasetSize = 	atoi(getfield(tmp, _Dsz));
-        	csi = getCsi(M/m, V/v);
-        	/* Add application parameters to the List */
-        	addParameters(&first, &current, session_app_id, app_id, w, chi_0, chi_C, m, M, V, v, D, csi, St, DatasetSize);
-
-        	rows++;
-        	free(tmp);
-        }
-
-    }
-
-
-
-
-    /*
-     * For each application:
-     * -	Calculate nu_i (for other application different than the first),
-     * -	Store each value in a db table
-     * -	Find the bounds
-     */
-    calculate_Nu(configuration, conn, first,  par);
-    //MPI_calculateBounds(first, par.numberOfThreads, configuration, conn, par);
-
-/*
-    while (first!=NULL)
-    {
-    	printf("%s w(%d) nu(%lf) %d\n", first->app_id, first->w, first->nu_d, first->currentCores_d);
-    	first=first->next;
-    }
-*/
-
-    gettimeofday(&tv_final_nu, NULL);
-
-    gettimeofday(&tv_initial_init, NULL);
-    /* Calculate baseFO for erach application */
-    initialize(configuration, conn, first, par);
-    gettimeofday(&tv_final_init, NULL);
+    gettimeofday(&tv_initial_nu, NULL);
+     /* Calculate the indices */
+     calculate_Nu(configuration, conn, first,  par);
+     gettimeofday(&tv_final_nu, NULL);
 
     gettimeofday(&tv_initial_fix, NULL);
 
-    sListPointers *firstPointer = fixInitialSolution(first, par);
+    sApplicationPointers *firstPointer = fixInitialSolution(first, par);
     gettimeofday(&tv_final_fix, NULL);
+
+    gettimeofday(&tv_initial_init, NULL);
+       /* Calculate baseFO for each application */
+       initialize(configuration, conn, first, par);
+       gettimeofday(&tv_final_init, NULL);
 
     /* Invoke localSearch */
     gettimeofday(&tv_initial_locals, NULL);
@@ -200,28 +95,23 @@ int main(int argc, char **argv)
     gettimeofday(&tv_final_locals, NULL);
 
     debugInformational("Final solution\n", par);
-    writeList(conn, getConfigurationValue(configuration,"OptDB_dbName"),first, par);
+    writeResults(conn, getConfigurationValue(configuration,"OptDB_dbName"),first, par);
 
     /* De-allocate resources and close connection */
-    fclose(stream);
-    //
-    freeParametersList(first);
-    freeApplicationList(firstPointer);
-    free(app_id);
+
+    freeParameters(first);
+    freeApplications(firstPointer);
+
     DBclose(conn);
 
     gettimeofday(&tv_final_main, NULL);
 
     //printOutput(first);
     sprintf(debugMsg, "FixInitial step elapsed time: %lf\n", elapsedTime(tv_initial_fix, tv_final_fix));debugMessage(debugMsg, par);
-    sprintf(debugMsg, "Findbounds (including Nu computation) elapsed time: %lf\n", elapsedTime(tv_initial_nu, tv_final_nu));debugMessage(debugMsg, par);
+    sprintf(debugMsg, "Findbounds  elapsed time: %lf\n", elapsedTime(tv_initial_bounds, tv_final_bounds));debugMessage(debugMsg, par);
     sprintf(debugMsg, "Initialization elapsed time %lf\n", elapsedTime(tv_initial_nu, tv_final_nu));debugMessage(debugMsg, par);
     sprintf(debugMsg, "LocalSearch step elapsed time: %lf\n", elapsedTime(tv_initial_locals, tv_final_locals));debugMessage(debugMsg, par);
     sprintf(debugMsg, "Overall elapsed time: %lf\n", elapsedTime(tv_initial_main, tv_final_main));debugMessage(debugMsg, par);
-
-
-
-
 
     // This return code is tested by the caller
     // Any value different than 0 will fire an exception

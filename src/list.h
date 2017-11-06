@@ -7,69 +7,64 @@
 
 #ifndef LIST_H_
 #define LIST_H_
+#include "interpolation.h"
 
-#define HYP_INTERPOLATION_POINTS  2
 
+
+/*
+ * List name optJrParameters
+ * Description This list includes all the input parameters passed to OPT_JR from the command line
+ */
 struct optJrParameters
 {
-	char filename[1024];
-	int debug;
-	int cache;
-	int globalFOcalculation;
-	int K;
-	int simulator;
-	int number;
-	int maxIterations;
-	int numberOfThreads;
+	char filename[1024];	/* The csv file */
+	int debug;				/* debug option: "y" prints every message, "n" only prints fatal errors */
+	int cache;				/* cache option: "y" makes use of the DB predictor cache table; "n" doesn't */
+	int globalFOcalculation;/* global FO calculation: "y" calculates at each loop of localSearch function the global objective function value, "n" doesn't */
+	int K;					/* Maximum depth: the search of candidates in the auxiliary list stops if this limit is exceeded */
+	int predictor;			/* The predictor type: either dagSim or Lundstrom */
+	int number;				/* Number of toal cores available for the applications (N) */
+	int maxIterations;		/* The maximum number of iterations in LocalSearch */
+	int numberOfThreads;	/* The number of MPI threads */
 };
 
 
-struct lastSimulatorRun
-{
-	int nCores;
-	double R;
-
-};
-typedef struct lastSimulatorRun slastSimulatorRun;
-
-struct AlphaBetaManagement
-{
-	slastSimulatorRun vec[HYP_INTERPOLATION_POINTS];
-	int index;
-};
-typedef struct AlphaBetaManagement sAlphaBetaManagement;
-
-
+/*
+ * List Configuration
+ * Description It includes all the variables in the wsi_config.xml file
+ */
 struct Configuration
 {
-	char * variable;
-	char *value;
+	char * variable; /* Variable name */
+	char *value;	/* Variable's value) */
 	struct Configuration *next;
 };
 typedef struct Configuration sConfiguration;
 
-struct List
+/*
+ * List Application
+ * Description profile parameters related to the single application
+ */
+struct Application
 {
-	/* Way to invoke the algorithm */
-	int mode; /* How the objective function is calculated */
-
-	/* profile parameters related to the single application */
-	char * session_app_id;
-	char * app_id;
-    int w;					/* Weight application  */
-    double term_i;
-    double chi_0;
-    double chi_C;
+	/* Static parameters */
+	int mode; 				/* How the objective function is calculated (currently redundant) */
+	char * session_app_id;	/* Session identifier */
+	char * app_id;			/* Application identifier */
+    int w;					/* Weight  */
+    double term_i;			/* Used to calculate nu index */
+    double chi_0;			/* ML parameter */
+    double chi_C;			/* ML parameter */
     double m;
     double M;
     double V;
     double v;
     double Deadline_d;
     double csi;
-    char * stage;
+    char * stage;			/* Application's stage (used in case of residual time) */
     int datasetSize;
 
-    /* Calculated values */
+    /* Dynamic values */
 
     double nu_d;				/* nu value */
     int  currentCores_d;		/* Initialized to nu_i */
@@ -78,72 +73,72 @@ struct List
     double R_d;					/* Value of R as per the predictor */
     double R_bound_d;			/* Bound (R) */
     double baseFO;				/* base FO value (used to calculate the delta) */
-
+    double initialBaseFO;		/* copy of base FO value (used to reset the value) */
     float alpha;				/* First parameter for Hyperbolic interpolation */
     float beta;					/* Second parameter for Hyperbolic interpolation */
-    sAlphaBetaManagement sAB;
-
+    sAlphaBetaManagement sAB;	/* Interpolation */
     int boundIterations;		/* Metrics */
-
     int vm;						/* Read from OPTIMIZER_CONFIGURATION_TABLE */
 
-	struct List *next;
+	struct Application *next;
 };
-typedef struct List sList;
+typedef struct Application sApplication;
 
-
-struct PredictorCash
-{
-	char app_id[1024];
-	int ncores;
-	int datasize;
-	double output;
-	struct PredictorCash *next;
-};
-typedef struct PredictorCash sPredictorCash;
 
 // The element corresponding to the event
 
 
 
 
-struct ListPointers
+struct ApplicationPointers
 {
-	sList *app;
-	struct ListPointers *next;
+	sApplication *app;
+	struct ApplicationPointers *next;
 };
+typedef struct ApplicationPointers sApplicationPointers;
 
-typedef struct ListPointers sListPointers;
 
+/*
+ * List Statistics
+ * Description It includes relevant statistica information
+ */
 struct Statistics
 {
-	int iteration;
-	int size;
-	double FO_Total;
+	int iteration;		/* Interation number */
+	int size;			/* Size of the candidates list */
+	double FO_Total;	/* total objective function value for that interation */
 	struct Statistics *next;
 };
 typedef struct Statistics sStatistics;
 
 
 
-
-struct aux
-{
-	sList * app1; // ToDO: replace to the pointer to the application -> DONE
-	sList * app2;// ToDO: replace to the pointer to the application -> DONE
-	int newCoreAssignment1;
-	int newCoreAssignment2;
-	double deltaFO;
-	double delta_i, delta_j;
-
-	struct aux *next;
-};
-typedef struct aux sAux;
-
-
 /*
- * Function templates
+ * List Candidates
+ * Description It includes for each move the information about promising moves
+ * (as they are estimated only via interpolations and not computed via the predictor)
+ *
  */
+struct Candidates
+{
+	/* First application */
+	sApplication * app_i; 		/* Application */
+	int newCoreAssignment_i;	/* Application cores after the move */
+	int delta_i;				/* Delta cores following the move */
+	double real_i;				/* Real predictor value calculated (MPI) after the interpolation */
+
+	/* Second application */
+	sApplication * app_j;
+	int newCoreAssignment_j;
+	int delta_j;
+	double real_j;
+	int nodes_i, nodes_j;
+
+	double deltaFO;				/* Delta Objective Function following the move */
+
+	struct Candidates *next;
+};
+typedef struct Candidates sCandidates;
 
 
 

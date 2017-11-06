@@ -6,7 +6,8 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include "db.h"
+#include "common.h"
+
 
 
 /*
@@ -26,6 +27,11 @@ MYSQL_ROW executeSQL(MYSQL *conn, char *statement, struct optJrParameters par)
 	char error[256];
 	char debugMsg[1024];
 
+	if (conn == NULL)
+	{
+		printf("FATAL ERROR: executeSQL: NULL connection\n");
+		exit(-1);
+	}
 	if (mysql_query(conn, statement))
 	{
 		char error[512];
@@ -35,7 +41,7 @@ MYSQL_ROW executeSQL(MYSQL *conn, char *statement, struct optJrParameters par)
 
 
 	result = mysql_store_result(conn);
-	sprintf(debugMsg, "statement %s\n", statement);debugMessage(debugMsg, par);
+
 	if (result == NULL)
 	{
 		sprintf(error, "Failure: ExecuteSQL: statement was %s\n", statement);
