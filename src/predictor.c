@@ -1,9 +1,18 @@
 /*
- * predictor.c
- *
- *  Created on: Oct 31, 2017
- *      Author: work
- */
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+##     http://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,10 +22,6 @@
 #include <sys/time.h>
 
 #include "predictor.h"
-
-
-
-
 
 /*
  * Name: invokePredictor
@@ -82,9 +87,9 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 				MYSQL_ROW row = executeSQL(conn, statementSearch, par);
 				sprintf(debugMsg, "statement %s\n", statementSearch);debugMessage(debugMsg, par);
 
-				if (row == NULL)
+				if (row == NULL || par.cache == 0)
 				{
-					sprintf(debugMsg, "Last SQL statement returned 0 rows. Invoking predictor...");debugMessage(debugMsg, par);
+					sprintf(debugMsg, "Last SQL statement returned 0 rows or cache is disabled. Invoking predictor...");debugMessage(debugMsg, par);
 					sprintf(path, "%s/%s/%s/logs", getConfigurationValue(configuration, "RESULTS_HOME"),readFolder(path), appId);
 					strcpy(subfolder, readFolder(path));
 					sprintf(cmd, "%s/%s/", path, subfolder);
@@ -138,6 +143,8 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 						printf("Fatal Error: invokePredictor: dagSim output was zero (%s)\n", newpath);
 						exit(-1);
 					}
+
+
 
 					/* Update the db cash table with a new value */
 					/* Check again that no other MPI opt_jr instance has updated the DB */

@@ -1,8 +1,18 @@
 /*
- * localSearch.c *
- *  Created on: Jun 27, 2017
- *      Author: work
- */
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+##     http://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+*/
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,7 +59,7 @@ void checkTotalNodes(int N, sApplication * pointer)
  * 		Description:			Localsearch algorithm as per functional analysis
  *
  */
-void localSearch(sConfiguration * configuration, MYSQL *conn, sApplication * first, int n, int MAX_PROMISING_CONFIGURATIONS, struct optJrParameters par)
+void localSearch(sConfiguration * configuration, MYSQL *conn, sApplication * first, struct optJrParameters par)
 {
 	sApplication * application_i, *application_j;
 	sCandidates *sfirstCandidateApproximated = NULL;
@@ -58,7 +68,7 @@ void localSearch(sConfiguration * configuration, MYSQL *conn, sApplication * fir
 	double TotalFO;
 	int how_many;
 	int nCoreMov;
-
+	int MAX_PROMISING_CONFIGURATIONS = par.K;
 	int DELTAVM_i, DELTAVM_j;
 	double DELTA_fo_App_i, DELTA_fo_App_j;
 	sCandidates * minCandidate;
@@ -75,8 +85,6 @@ void localSearch(sConfiguration * configuration, MYSQL *conn, sApplication * fir
 			/* The Candidate Application is empty. No further solution enhancements possible */
 			debugInformational("LocalSearch: empty Candidate Application", par);
 
-			/* Store on the db the results for all the applications */
-			writeResults(conn, getConfigurationValue(configuration, "OptDB_dbName"), first, par);
 			break;
 	}
 

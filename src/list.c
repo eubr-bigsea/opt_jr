@@ -1,3 +1,18 @@
+/*
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+##     http://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,7 +34,7 @@ void printOPT_JRPars(struct optJrParameters par )
 	printf("Global FO calculation: %d\n", par.globalFOcalculation);
 }
 /*
- * 		Name:					addParameter
+ * 		Name:					addApplication
  * 		Input parameters:		int nApp, sApplication ** first, sApplication ** current,  char * app_id, double w, double chi_0, double chi_C, double chi_c_1, double m, double M, double V, double v, int D, double csi,
 		double csi_1, char * StageId, int datasetSize
  * 		Output parameters:		Updated pointers to the first and current element of the list
@@ -110,10 +125,6 @@ void addApplication(sApplication ** first,   sApplication ** current, char *sess
 	 	 	 			 }
 }
 
-
-
-
-
 /*
  * 		Name:					writeResults
  * 		Input parameters:		sApplication *pointer
@@ -133,7 +144,7 @@ void writeResults(MYSQL *conn, char * dbName, sApplication *pointer, struct optJ
 
 	while (pointer!=NULL)
 	{
-		sprintf(debugMsg, "ApplicationId %s cores %d VMs %d\n", pointer->app_id, pointer->currentCores_d, pointer->vm);debugMessage(debugMsg, par);
+		printf("Session ID %s Application Id %s cores %d VMs %d\n", pointer->session_app_id, pointer->app_id, pointer->currentCores_d, pointer->vm);debugMessage(debugMsg, par);
 		/* Check if the result of the computation for that session, application has been already computed and stored previously */
 		sprintf(sqlStatement, "select * from %s.OPT_SESSIONS_RESULTS_TABLE ", dbName);
 		MYSQL_ROW row = executeSQL(conn, sqlStatement, par);
@@ -172,7 +183,6 @@ void writeResults(MYSQL *conn, char * dbName, sApplication *pointer, struct optJ
 							DBerror(conn, error);
 						}
 		}
-
 		pointer = pointer->next;
 	}
 
@@ -197,9 +207,6 @@ void printApplications(sApplication *pointer, struct optJrParameters par)
 
 }
 
-
-
-
 void printApplication(sApplication *pointer, struct optJrParameters par)
 {
 
@@ -210,6 +217,9 @@ void printApplication(sApplication *pointer, struct optJrParameters par)
 
 }
 
+/*
+ * CURRENTLY NOT USED -> WILL BE REMOVED AFTER TESTS HAVE BEEN CONPLETED
+ */
 void commitAssignment(sApplication *pointer, char *session_appId,  double DELTA, struct optJrParameters par)
 {
 	char debugMsg[DEBUG_MSG];
@@ -224,10 +234,8 @@ void commitAssignment(sApplication *pointer, char *session_appId,  double DELTA,
 		exit(-1);
 	}
 
-	/* Check that currentCores_d is positive: ignore if otherwise
-			 *
-	*/
-	if ((int)pointer->currentCores_d + DELTA*pointer->V <= 0)
+	/* Check that currentCores_d is positive: ignore if otherwise */
+	if (pointer->currentCores_d + DELTA*pointer->V <= 0)
 	{
 		printf("Negative or zero value for currentCores was not committed\n");
 		return;
@@ -239,8 +247,6 @@ void commitAssignment(sApplication *pointer, char *session_appId,  double DELTA,
 
 
 }
-
-
 
 /*
  * 		Name:					freeApplications
@@ -314,56 +320,20 @@ void freeStatistics(sStatistics * pointer)
 }
 
 /*
- * 		Name:					findMinDelta
- * 		Input parameters:		sCandidates *pointer
- * 		Output parameters:		Minimum Delta
- * 		Description:			It retrieves the minimum delta
- *
- */
-sCandidates * findMinDelta(sCandidates * pointer)
-{
-	double min = DBL_MAX;
-	sCandidates *minCandidate = NULL;
-
-
-	while (pointer != NULL)
-	{
-		if (doubleCompare(pointer->deltaFO, min) == -1)
-			{
-				min = pointer->deltaFO;
-				minCandidate = pointer;
-			}
-		pointer = pointer->next;
-	}
-	return minCandidate;
-}
-
-
-
-
-
-/*
  * 		Name:					addCandidates
  * 		Input parameters:		sCandidates ** first, sCandidates ** current,  char * app_id1, char * app_id2, int contr1, int contr2, double delta
  * 		Output parameters:		Updated pointers to the first and current element of the list
- * 		Description:			This function adds all the information regarding the localSearch deltafo calculation
+ * 		Description:			This function adds all the information regarding the localSearch deltafo calculation. The list is sorted by deltafo value.
  *
  */
 void addCandidate(sCandidates ** first, sCandidates ** current,  sApplication * app_i, sApplication * app_j, int contr1, int contr2, double delta, double delta_i, double delta_j)
 {
-	if (contr1 < 0 || contr2 < 0)
-	{
-		printf("addCandidateParameters: an application has a number of core <= 0\n");
-		return;
-	}
-
 	  sCandidates *new = (sCandidates*) malloc(sizeof(sCandidates));
 	  if (new == NULL)
 	  {
 		  printf("addCandidateParameters: Fatal Error: malloc failure\n");
 		  exit(-1);
 	  }
-
 
 	  new->app_i = app_i;
 	  new->app_j = app_j;
@@ -433,6 +403,14 @@ void addStatistics(sStatistics ** first, sStatistics ** current, int iteration, 
 
 }
 
+
+/*
+ * 		Name:
+ * 		Input parameters:
+ * 		Output parameters:
+ * 		Description:
+ *
+ */
 void addConfiguration(sConfiguration ** first, sConfiguration ** current, char * variable, char * value)
 {
 
@@ -467,6 +445,13 @@ void addConfiguration(sConfiguration ** first, sConfiguration ** current, char *
 	  *current = new;
 }
 
+/*
+ * 		Name:
+ * 		Input parameters:
+ * 		Output parameters:
+ * 		Description:
+ *
+ */
 sConfiguration * readConfigurationFile()
 {
 	FILE * fp;
@@ -513,7 +498,13 @@ sConfiguration * readConfigurationFile()
 }
 
 
-
+/*
+ * 		Name:
+ * 		Input parameters:
+ * 		Output parameters:
+ * 		Description:
+ *
+ */
 char *getConfigurationValue(sConfiguration *pointer, char * variable)
 {
 	int found = 0;
@@ -532,24 +523,36 @@ char *getConfigurationValue(sConfiguration *pointer, char * variable)
 	else return pointer->value;
 }
 
-
+/*
+ * 		Name:
+ * 		Input parameters:
+ * 		Output parameters:
+ * 		Description:
+ *
+ */
 void readStatistics(sStatistics *pointer, struct optJrParameters par)
 {
 	char debugMsg[DEBUG_MSG];
 
 	debugBanner("Statistics list content:", par);
 
-	if (par.numberOfThreads > 0) printf("(OpenMP: yes) Iteration   List Size  Total FO\n");
-	else printf("(OpenMP: no) Iteration   List Size  Total FO\n");
+	if (par.numberOfThreads > 0) printf("(OpenMP: yes) Iteration   List Size  Total_FO\n");
+	else printf("(OpenMP: no) Iteration   List Size  Total_FO\n");
 	while (pointer!=NULL)
 	{
-		sprintf(debugMsg, "%d %d %lf", pointer->iteration, pointer->size, pointer->FO_Total);debugMessage(debugMsg, par);
-
+		printf("%d %d %lf\n", pointer->iteration, pointer->size, pointer->FO_Total);
 		pointer = pointer->next;
 	}
 
 }
 
+/*
+ * 		Name:
+ * 		Input parameters:
+ * 		Output parameters:
+ * 		Description:
+ *
+ */
 void addApplicationPointer(sApplicationPointers ** first,   sApplication *application)
 {
 
@@ -595,7 +598,13 @@ void addApplicationPointer(sApplicationPointers ** first,   sApplication *applic
 
 }
 
-
+/*
+ * 		Name:
+ * 		Input parameters:
+ * 		Output parameters:
+ * 		Description:
+ *
+ */
 void readApplicationPointers(sApplicationPointers *pointer, struct optJrParameters par)
 {
 	char debugMsg[DEBUG_MSG];
@@ -638,6 +647,14 @@ void readCandidates(sCandidates *pointer, struct optJrParameters par)
 	}
 	sprintf(debugMsg, "\n");debugMessage(debugMsg, par);
 }
+
+/*
+ * 		Name:
+ * 		Input parameters:
+ * 		Output parameters:
+ * 		Description:
+ *
+ */
 
 void printCandidate(sCandidates *pointer, struct optJrParameters par)
 {

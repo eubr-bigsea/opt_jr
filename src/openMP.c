@@ -1,9 +1,18 @@
 /*
- * OpenMp.c
- *
- *  Created on: Nov 5, 2017
- *      Author: work
- */
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+##     http://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,11 +26,11 @@
 
 void calculateOpenMPBounds(sApplication * pointer, int n_threads, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par)
 {
-	printf("\n\n*************** Calculate bounds (OpenMP) for each application *************** \n\n");
+	debugBanner("Calculate bounds (OpenMP)", par);
 
 	sApplication* t_pointer[n_threads];
 	MYSQL *conn2[n_threads];
-	for (int i =0; i< n_threads;++i)
+	for (int i = 0; i < n_threads;++i)
 	{
 		t_pointer[i]=pointer;
 		conn2[i]=DBopen(
@@ -73,7 +82,9 @@ void calculateOpenMPBounds(sApplication * pointer, int n_threads, sConfiguration
 			++j;
 		}
 	}
-	printf("\n\n*************** End calculate bounds ***************** \n\n");
+	for (int i =0; i< n_threads;++i)
+		DBclose(conn2[i]);
+	debugBanner("End calculate bounds  (OpenMP)", par);
 
 }
 
@@ -85,7 +96,7 @@ void invokePredictorOpenMP(sCandidates * pointer,  struct optJrParameters par, s
 	char debugMsg[256];
 	sCandidates* t_pointer[n_threads];
 	MYSQL *conn2[n_threads];
-	int backup[n_threads];
+
 
 	if (pointer == NULL) return;
 
@@ -128,8 +139,9 @@ void invokePredictorOpenMP(sCandidates * pointer,  struct optJrParameters par, s
 			++j;
 		}
 
-
 	}
+	for (int i = 0; i < n_threads;++i)
+				DBclose(conn2[i]);
 
 
 }

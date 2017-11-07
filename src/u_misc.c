@@ -1,14 +1,18 @@
 /*
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+##     http://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+*/
 
- * utilities.c
-
- *
-
- *  Created on: 06 apr 2016
-
- *      Author: Enrico
-
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -161,7 +165,6 @@ struct optJrParameters parseCommandLine(char **args, int argc)
 															else par.predictor = LUNDSTROM;
 							}
 								else if (strstr(args[i], GLOBAL_FO_CALCULATION)) par.globalFOcalculation = atoi(parseArg(args[i], GLOBAL_FO_CALCULATION, YES_NO));
-								else if (strstr(args[i], NUMBER_OF_THREADS)) par.numberOfThreads = atoi(parseArg(args[i], NUM_N, NUMBER));
 									else if (strstr(args[i], MAX_ITERATIONS))
 										par.maxIterations = atoi(parseArg(args[i], MAX_ITERATIONS, NUMBER));
 									else if (strstr(args[i], CACHE)) par.cache = atoi(parseArg(args[i], CACHE, YES_NO));

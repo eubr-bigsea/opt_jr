@@ -1,3 +1,17 @@
+/*
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+##     http://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,7 +73,7 @@ void  Bound(sConfiguration *configuration, MYSQL *conn, sApplication * pointer, 
 				break;
 			}
 			nCores = nCores + STEP;
-			predictorOutput = atof(invokePredictor(configuration, conn, nNodes, nCores, "8G", pointer->datasetSize, pointer->session_app_id, pointer->app_id, pointer->stage,par, WHOLE_EXECUTION_TIME));
+			predictorOutput = atof(invokePredictor(configuration, conn, nNodes, nCores, "*", pointer->datasetSize, pointer->session_app_id, pointer->app_id, pointer->stage,par, WHOLE_EXECUTION_TIME));
 			sprintf(debugMsg,"Bound evaluation for %s predictorOutput = %lf (deadline is %lf) cores %d\n",  pointer->session_app_id, predictorOutput,pointer->Deadline_d, nCores);debugMessage(debugMsg, par);
 
 			BCores = nCores;

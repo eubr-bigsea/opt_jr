@@ -1,9 +1,18 @@
 /*
- * prototypes.h
- *
- *  Created on: Jun 4, 2017
- *      Author: work
- */
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+##     http://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+*/
+
 
 #ifndef SRC_COMMON_H_
 #define SRC_COMMON_H_
@@ -42,7 +51,7 @@
 #define DAGSIM 0
 #define LUNDSTROM 1
 
-#define ARGS 10 // Command line
+#define ARGS 9 // Command line
 
 #define FILENAME "-f="
 #define NUM_N "-n="
@@ -51,7 +60,6 @@
 #define MAX_ITERATIONS "-i="
 #define SIMULATOR "-s="
 #define GLOBAL_FO_CALCULATION "-g"
-#define NUMBER_OF_THREADS "-t"
 #define CACHE "-c"
 
 #define NUMBER 0
@@ -75,7 +83,7 @@ struct Best bestMatch(char *, int);
 void  Bound(sConfiguration *, MYSQL *conn, sApplication *, struct optJrParameters);
 
 void  calculate_Nu(sConfiguration *, MYSQL *, sApplication *,  struct optJrParameters);
-void calculateMPIBounds(sApplication * pointer, int n_threads, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par);
+void calculateOpenMPBounds(sApplication * pointer, int n_threads, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par);
 void calculateBounds(sApplication * pointer, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par);
 void checkTotalNodes(int N, sApplication * pointer);
 
@@ -119,7 +127,7 @@ void initialize(sConfiguration * configuration, MYSQL *conn, sApplication * appl
 char* invokePredictor(sConfiguration * , MYSQL *, int , int , char * , int ,  char *, char *, char *, struct optJrParameters, int);
 void invokePredictorOpenMP(sCandidates *sfirstCandidateApproximated, struct optJrParameters, sConfiguration *configuration);
 
-void localSearch(sConfiguration *, MYSQL *conn, sApplication *, int, int, struct optJrParameters);
+void localSearch(sConfiguration *, MYSQL *conn, sApplication *, struct optJrParameters);
 char * ls(char *, struct optJrParameters);
 char * LundstromPredictor(sConfiguration *, int , char * , struct optJrParameters);
 

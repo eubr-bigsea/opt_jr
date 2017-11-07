@@ -1,9 +1,17 @@
 /*
- * io.c
- *
- *  Created on: 10 Mar 2017
- *      Author: Enrico
- */
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+##     http://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+*/
 
 
 
@@ -20,8 +28,6 @@
 
 int main(int argc, char **argv)
 {
-
-    double N;
     struct optJrParameters par;
     char debugMsg[DEBUG_MSG];
     struct timeval  tv_initial_main,
@@ -44,6 +50,9 @@ int main(int argc, char **argv)
     /* Upload the configuration file ($HOME/wsi_config.xml) into a list */
     sConfiguration *configuration = readConfigurationFile();
 
+    /* Read the threads number */
+    par.numberOfThreads = atoi(getConfigurationValue(configuration, "THREADS_NUMBER"));
+
     /* Connect to the db */
     MYSQL *conn = DBopen(
             			getConfigurationValue(configuration, "OptDB_IP"),
@@ -56,23 +65,15 @@ int main(int argc, char **argv)
     // Calculate the time taken
     gettimeofday(&tv_initial_main, NULL);
 
-
-
-    /*
-     * Read total cores available
-     */
-    N = par.number;
-    int MAX_PROMISING_CONFIGURATIONS = par.K;
-
     /* Load applications details from csv file */
     sApplication *first = parseCsv(configuration, par);
 
     /* Calculate the bounds */
-        gettimeofday(&tv_initial_bounds, NULL);
-        calculateBounds(first, configuration, conn, par);
-        //calculateMPIBounds(first, par.numberOfThreads, configuration, conn, par);
-        gettimeofday(&tv_final_bounds, NULL);
-        printApplications(first, par);
+    gettimeofday(&tv_initial_bounds, NULL);
+    if (par.numberOfThreads == 0) calculateBounds(first, configuration, conn, par);
+    	else calculateOpenMPBounds(first, par.numberOfThreads, configuration, conn, par);
+     gettimeofday(&tv_final_bounds, NULL);
+
 
     gettimeofday(&tv_initial_nu, NULL);
      /* Calculate the indices */
@@ -91,7 +92,7 @@ int main(int argc, char **argv)
 
     /* Invoke localSearch */
     gettimeofday(&tv_initial_locals, NULL);
-    localSearch(configuration, conn, first, N, MAX_PROMISING_CONFIGURATIONS, par);
+    localSearch(configuration, conn, first, par);
     gettimeofday(&tv_final_locals, NULL);
 
     debugInformational("Final solution\n", par);
