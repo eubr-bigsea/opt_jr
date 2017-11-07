@@ -2,7 +2,7 @@ OPT_JR is the application balancer used within the BIG SEA project. It provides 
 
 Usage:
 
-./OPT_JR -f <filename.csv> -n <N> -k <Limit> -d <Y/y|N/n> -c <Y/y|N/n> -g=y -s <dagSim|lundstrom> -i <iterations> 
+./OPT_JR -f <filename.csv> -n <N> -k <Limit> -d <Y/y|N/n> -c <Y/y|N/n> -g=<Y/y|N/n> -s <dagSim|lundstrom> -i <iterations> 
 
 where:
 
