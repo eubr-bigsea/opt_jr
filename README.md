@@ -7,11 +7,16 @@ OPT_JR is the application balancer used within the BIG SEA project. It provides 
 where:
 
 `<filename.csv> is the csv file defining the profile applications under $UPLOAD_HOME in wsi_config.xml;`
+
 `<N> is the total number of cores;`
+
 `<Limit> is the maximum number of considered candidates (if equal to 0, all the candidates are considered).`
 `-d represents debug (on/off)`
+
 `-c represents cache (on/off)`
+
 `-g prints the value of the global objective function (on/off)`
+
 `-i represents the maximum number of iterations`
 
 #Example:
