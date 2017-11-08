@@ -141,13 +141,21 @@ void writeResults(MYSQL *conn, char * dbName, sApplication *pointer, struct optJ
 	char sqlStatement[512];
 
 	debugBanner( "writeResults", par);
-
+	if (pointer == NULL)
+	{
+		printf("FATAL ERROR: writeResults: pointer cannot be null\n");
+		exit(-1);
+	}
 	while (pointer!=NULL)
 	{
 		printf("Session ID %s Application Id %s cores %d VMs %d\n", pointer->session_app_id, pointer->app_id, pointer->currentCores_d, pointer->vm);debugMessage(debugMsg, par);
+
 		/* Check if the result of the computation for that session, application has been already computed and stored previously */
-		sprintf(sqlStatement, "select * from %s.OPT_SESSIONS_RESULTS_TABLE ", dbName);
+		sprintf(sqlStatement, "select opt_id, app_id from %s.OPT_SESSIONS_RESULTS_TABLE where opt_id='%s' and app_id='%s'",
+				dbName, par.filename,
+				pointer->session_app_id);
 		MYSQL_ROW row = executeSQL(conn, sqlStatement, par);
+
 		if (row == NULL)
 		{
 			sprintf(sqlStatement, "insert %s.OPT_SESSIONS_RESULTS_TABLE values('%s', '%s',%d, %d)",
