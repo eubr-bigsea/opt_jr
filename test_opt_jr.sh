@@ -9,17 +9,17 @@ if [ -f $FILE ]; then
         #
 	# Get User
         #
-        temp=$(cat ${FILE}|grep OptDB_user)
+        temp=$(cat ${FILE}|grep DB_user)
         USER=$(echo $temp| awk -v FS="(>|<)" '{print $3}')
         #
         # Get password
         #
-        temp=$(cat ${FILE}|grep OptDB_pass)
+        temp=$(cat ${FILE}|grep DB_pass)
         PASSWORD=$(echo $temp| awk -v FS="(>|<)" '{print $3}')
         #
         # Get DBNAME
         #
-        temp=$(cat ${FILE}|grep OptDB_dbName)
+        temp=$(cat ${FILE}|grep DB_dbName)
         DB=$(echo $temp| awk -v FS="(>|<)" '{print $3}')
 	# 
 	# Build temp mysql configuraton file

@@ -55,10 +55,10 @@ int main(int argc, char **argv)
 
     /* Connect to the db */
     MYSQL *conn = DBopen(
-            			getConfigurationValue(configuration, "OptDB_IP"),
-    					getConfigurationValue(configuration, "OptDB_user"),
-    					getConfigurationValue(configuration, "OptDB_pass"),
-    					getConfigurationValue(configuration, "OptDB_dbName")
+            			getConfigurationValue(configuration, "DB_IP"),
+    					getConfigurationValue(configuration, "DB_user"),
+    					getConfigurationValue(configuration, "DB_pass"),
+    					getConfigurationValue(configuration, "DB_dbName")
     					);
     if (conn == NULL) DBerror(conn, "open_db: Opening the database");
 
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
     gettimeofday(&tv_final_locals, NULL);
 
     debugInformational("Final solution\n", par);
-    writeResults(conn, getConfigurationValue(configuration,"OptDB_dbName"),first, par);
+    writeResults(conn, getConfigurationValue(configuration,"DB_dbName"),first, par);
 
     /* De-allocate resources and close connection */
 

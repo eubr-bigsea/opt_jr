@@ -34,10 +34,10 @@ void calculateOpenMPBounds(sApplication * pointer, int n_threads, sConfiguration
 	{
 		t_pointer[i]=pointer;
 		conn2[i]=DBopen(
-								getConfigurationValue(configuration, "OptDB_IP"),
-						getConfigurationValue(configuration, "OptDB_user"),
-						getConfigurationValue(configuration, "OptDB_pass"),
-						getConfigurationValue(configuration, "OptDB_dbName")
+								getConfigurationValue(configuration, "DB_IP"),
+						getConfigurationValue(configuration, "DB_user"),
+						getConfigurationValue(configuration, "DB_pass"),
+						getConfigurationValue(configuration, "DB_dbName")
 						);
 	}
  	//call findbound in parallel;
@@ -62,7 +62,7 @@ void calculateOpenMPBounds(sApplication * pointer, int n_threads, sConfiguration
 				//Retrieve nCores from the DB
 				sprintf(statement,
 				                        "select num_cores_opt, num_vm_opt from %s.OPTIMIZER_CONFIGURATION_TABLE where application_id='%s' and dataset_size=%d and deadline=%lf;"
-								, getConfigurationValue(configuration, "OptDB_dbName"), t_pointer[ID]->app_id, t_pointer[ID]->datasetSize, t_pointer[ID]->Deadline_d);
+								, getConfigurationValue(configuration, "DB_dbName"), t_pointer[ID]->app_id, t_pointer[ID]->datasetSize, t_pointer[ID]->Deadline_d);
 
 				MYSQL_ROW row = executeSQL(conn2[ID], statement, par);
 				if (row == NULL)
@@ -104,10 +104,10 @@ void invokePredictorOpenMP(sCandidates * pointer,  struct optJrParameters par, s
 	for (int i = 0; i< n_threads;++i)
 	{
 			conn2[i]=DBopen(
-								getConfigurationValue(configuration, "OptDB_IP"),
-								getConfigurationValue(configuration, "OptDB_user"),
-								getConfigurationValue(configuration, "OptDB_pass"),
-								getConfigurationValue(configuration, "OptDB_dbName")
+								getConfigurationValue(configuration, "DB_IP"),
+								getConfigurationValue(configuration, "DB_user"),
+								getConfigurationValue(configuration, "DB_pass"),
+								getConfigurationValue(configuration, "DB_dbName")
 								);
 			t_pointer[i]=pointer;
 	}
