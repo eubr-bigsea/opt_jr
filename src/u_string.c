@@ -144,8 +144,8 @@ char * getfield(char* line, int num)
 /*
  * Name 		extractItem
  * Input 		const char *const string, const char *const left, const char *const right
- * Output 		char * A word
- * Description:	It returns a word delimited between two characters
+ * Output 		char * A wor
+ * Description:	It returns a word delimited between two strings. If the second string is NULL, it just returns the last item in the string
  */
 char * extractItem(const char *const string, const char *const left, const char *const right)
 {
@@ -154,20 +154,29 @@ char * extractItem(const char *const string, const char *const left, const char 
 	    size_t length;
 	    char  *result;
 
-	    if ((string == NULL) || (left == NULL) || (right == NULL))
-	        return NULL;
+	   // if ((string == NULL) || (left == NULL) || (right == NULL)) return NULL;
+	    if ((string == NULL) || (left == NULL)) return NULL;
 	    length = strlen(left);
 	    head   = strstr(string, left);
-	    if (head == NULL)
-	        return NULL;
+
+	    if (head == NULL) return NULL;
 	    head += length;
-	    tail  = strstr(head, right);
-	    if (tail == NULL)
-	        return tail;
-	    length = tail - head;
+
+	    if (right != NULL)
+	    {
+	    	tail  = strstr(head, right);
+	    	if (tail == NULL ) return tail;
+	    	 length = tail - head;
+	    } else
+	    	{
+	    		tail = (char *)malloc(strlen(string)+1);
+	    		strcpy(tail, string);
+	    		length = strlen(string);
+	    	}
+
 	    result = malloc(1 + length);
-	    if (result == NULL)
-	        return NULL;
+
+	    if (result == NULL) return NULL;
 	    result[length] = '\0';
 
 	    memcpy(result, head, length);

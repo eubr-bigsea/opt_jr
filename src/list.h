@@ -59,7 +59,7 @@ struct Application
 	int mode; 				/* How the objective function is calculated (currently redundant) */
 	char * session_app_id;	/* Session identifier */
 	char * app_id;			/* Application identifier */
-    int w;					/* Weight  */
+    double w;					/* Weight  */
     double term_i;			/* Used to calculate nu index */
     double chi_0;			/* ML parameter */
     double chi_C;			/* ML parameter */
@@ -147,7 +147,6 @@ struct Candidates
 	struct Candidates *next;
 };
 typedef struct Candidates sCandidates;
-
 
 
 #endif /* LIST_H_ */

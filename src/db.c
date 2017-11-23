@@ -24,61 +24,62 @@
  */
 void DBerror(MYSQL *conn, char * msg)
 {
-   printf("DBError: %s %s\n", msg, mysql_error(conn));
-   mysql_close(conn);
-   exit(-1);
+	printf("DBError: %s %s\n", msg, mysql_error(conn));
+	mysql_close(conn);
+	exit(-1);
 }
 
 
 MYSQL_ROW executeSQL(MYSQL *conn, char *statement, struct optJrParameters par)
 {
-   MYSQL_RES *result;
-   char error[256];
+	MYSQL_RES *result;
+	char error[256];
+
+	debugMessage(statement, par);
+	if (conn == NULL)
+	{
+		printf("FATAL ERROR: executeSQL: NULL connection\n");
+		exit(-1);
+	}
+	if (mysql_query(conn, statement))
+	{
+		char error[512];
+		sprintf(error,"SQL failure executeSQL on %s", statement);
+		DBerror(conn, error);
+	}
 
 
-   if (conn == NULL)
-   {
-      printf("FATAL ERROR: executeSQL: NULL connection\n");
-      exit(-1);
-   }
-   if (mysql_query(conn, statement))
-   {
-      char error[512];
-      sprintf(error,"SQL failure executeSQL on %s", statement);
-      DBerror(conn, error);
-   }
+	result = mysql_store_result(conn);
 
-
-   result = mysql_store_result(conn);
-
-   if (result == NULL)
-   {
-      sprintf(error, "Failure: ExecuteSQL: statement was %s\n", statement);
-      DBerror(conn, error);
-      return NULL;
-   }
-   else
-      return(mysql_fetch_row(result));
+	if (result == NULL)
+	{
+		sprintf(error, "Failure: ExecuteSQL: statement was %s\n", statement);
+		DBerror(conn, error);
+		return NULL;
+	}
+	else
+		return(mysql_fetch_row(result));
 
 }
 /*
  * Open a DB connection
  */
-MYSQL * DBopen(char * host, char * port, char * login, char * passw, char *dbName)
+MYSQL * DBopen(char * host, char * login, char * passw, char *dbName)
 {
 
 
-   MYSQL *con = mysql_init(NULL);
+MYSQL *con = mysql_init(NULL);
 
-   if (con == NULL)
-   {
+  if (con == NULL)
+  {
       fprintf(stderr, "DBError: %s\n", mysql_error(con));
       exit(1);
-   }
+  }
 
-   if (mysql_real_connect(con, host, login, passw, dbName, atoi(port), NULL, 0) == NULL) DBerror(con, "mysql_real_connect");
+  if (mysql_real_connect(con, host, login, passw,
+          dbName, 0, NULL, 0) == NULL) DBerror(con, "mysql_real_connect");
 
-   return con;
+  return con;
 }
 
 /*
@@ -86,7 +87,7 @@ MYSQL * DBopen(char * host, char * port, char * login, char * passw, char *dbNam
  */
 void DBclose(MYSQL *conn)
 {
-   mysql_close(conn);
+	mysql_close(conn);
 }
 
 

@@ -48,7 +48,7 @@ void  Bound(sConfiguration *configuration, MYSQL *conn, sApplication * pointer, 
 	pointer->currentCores_d = max( X0, pointer->V);
 
 	nCores = pointer->currentCores_d;
-	predictorOutput = atoi(invokePredictor(configuration, conn, nNodes, nCores, "*", pointer->datasetSize, pointer->session_app_id,
+	predictorOutput = atof(invokePredictor(configuration, conn, nNodes, nCores, "*", pointer->datasetSize, pointer->session_app_id,
 							pointer->app_id, pointer->stage, par, WHOLE_EXECUTION_TIME));
 	sprintf(debugMsg,"Bound evaluation for %s predictorOutput = %lf (deadline is %lf) cores %d\n",  pointer->session_app_id, predictorOutput, pointer->Deadline_d, nCores);debugMessage(debugMsg, par);
 	// Danilo 27/7/2017
@@ -121,7 +121,7 @@ void  Bound(sConfiguration *configuration, MYSQL *conn, sApplication * pointer, 
 	pointer->R_d = BTime;
 	pointer->bound = BCores;
 
-	sprintf(debugMsg,"\n\nSession_app_id %s APP_ID %s D = %lf R = %lf  bound = %d\n\n", pointer->session_app_id, pointer->session_app_id, pointer->Deadline_d, pointer->R_d, pointer->bound);debugMessage(debugMsg, par);
+	//sprintf(debugMsg,"\n\nSession_app_id %s APP_ID %s D = %lf R = %lf  bound = %d\n\n", pointer->session_app_id, pointer->session_app_id, pointer->Deadline_d, pointer->R_d, pointer->bound);debugMessage(debugMsg, par);
 }
 
 
@@ -143,7 +143,7 @@ void calculate_Nu(sConfiguration * configuration, MYSQL *conn, sApplication *fir
 	sApplication * current = first;
 	int rows = 0;
 	char * app_id;
-	int w1;
+	double w1;
 	double chi_c_1;
 	double csi_1;
 	int N = par.number;
@@ -210,7 +210,7 @@ void calculate_Nu(sConfiguration * configuration, MYSQL *conn, sApplication *fir
 
 	while (current != NULL)
 	{
-		//findBound(configuration, conn, getConfigurationValue(configuration, "DB_dbName"), current, par);
+		//findBound(configuration, conn, getConfigurationValue(configuration, "OptDB_dbName"), current, par);
 		if (rows > 0)
 		{
 			csi = getCsi(current->M/current->m, current->V/current->v);
@@ -276,12 +276,12 @@ void calculateBounds(sApplication * pointer,  sConfiguration * configuration, MY
 		//Retrieve nCores from the DB
 		sprintf(statement,
                         "select num_cores_opt, num_vm_opt from %s.OPTIMIZER_CONFIGURATION_TABLE where application_id='%s' and dataset_size=%d and deadline=%lf;"
-				, getConfigurationValue(configuration, "DB_dbName"), pointer->app_id, pointer->datasetSize, pointer->Deadline_d);
+				, getConfigurationValue(configuration, "OptDB_dbName"), pointer->app_id, pointer->datasetSize, pointer->Deadline_d);
 
 		MYSQL_ROW row = executeSQL(conn, statement, par);
 		if (row == NULL)
 		{
-			printf("Fatal error: no matches found on OPTIMIZER_CONFIGURATION_TABLE.\nCHeck that OPT_IC was run over the specific application.\n");
+			printf("Fatal error: no matches found on OPTIMIZER_CONFIGURATION_TABLE.\nCheck that OPT_IC was run over the specific application.\n");
 			exit(-1);
 		}
 
@@ -291,10 +291,9 @@ void calculateBounds(sApplication * pointer,  sConfiguration * configuration, MY
 		Bound(configuration, conn, pointer, par);
 		sprintf(debugMsg,"A bound for %s has been calculated", pointer->session_app_id);
 		debugMessage(debugMsg, par);
-
 		pointer = pointer->next;
 	}
-
+	debugBanner("Calculate Bounds has ended", par);
 }
 
 

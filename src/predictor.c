@@ -42,6 +42,10 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 	char dbName[64];
 	char dir[1024];
 	int TOTAL_NODES = nNodes * currentCores;
+	/* Create unique extension */
+	struct timeval tv;
+	gettimeofday(&tv,NULL);
+	double extension = (double)tv.tv_usec;
 	char *output1 = (char *)malloc(64);
 	if (output1 == NULL)
 	{
@@ -59,16 +63,48 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 	 This is possible because the variance between the log folders is small*/
 	strcpy(path, getConfigurationValue(configuration, "RESULTS_HOME"));
 	strcpy(dir, readFolder(path));
+
+	/* Create unique dagSim output filename */
+	double systemTime;
+	double stageTime;
+	char predictorOutputPath[256];
+	sprintf(predictorOutputPath, "/tmp/outputDagsim_%lf.txt", extension);
+
+	/* Extract nodes, cores, dataset and memory from the subfolder name */
+	char name[512];
+	strcpy(name, readFolder(path));
+	char _nodes[8], _cores[8], _memory[8], _dataset[8], temp[8];
+
+
+	strcpy(_nodes, extractItem(name, "", "_"));
+	strcpy(_cores, extractItem(name, "_", "_"));strcpy(temp, _cores);
+	strcpy(_memory, extractItem(name, strcat(temp, "_"), "_"));strcpy(temp, _memory);
+	strcpy(_dataset, extractItem(name, strcat(temp, "_"), NULL));
+
+	/* Determine the data log folder for the predictor */
+	sprintf(path, "%s/%s/%s/logs", getConfigurationValue(configuration, "RESULTS_HOME"),readFolder(path), appId);
+	strcpy(subfolder, readFolder(path));
+
+
 	/* Determine the predictor to invoke */
 	switch(par.predictor)
 	{
 			case LUNDSTROM:
-				sprintf(parameters, "%d %d %s %d %s", nNodes, currentCores, memory, datasize, appId);
+
+				sprintf(parameters, "-n %s -c %s -r %s -d %s -q %s -p spark > %s", _nodes, _cores, _memory, _dataset, appId, predictorOutputPath);
 				sprintf(cmd, "cd %s;python run.py %s", getConfigurationValue(configuration, "LUNDSTROM_HOME"), parameters);
+				printf("%s\n", cmd);
+				/* Execute predictor */
+				_run(cmd, par);
+				/* Parse the output */
+				strcpy(output1,
+						extractItem(readFile(predictorOutputPath),
+						"predicted\": \"", "\""));
 				break;
 			case DAGSIM:
+				sprintf(debugMsg, "invokePredictor: session %s app %s checking cache on %d cores\n", sessionId, appId, TOTAL_NODES);debugMessage(debugMsg, par);
 				/* Check first if the estimate time has been already calculated */
-				strcpy(dbName, getConfigurationValue(configuration,"DB_dbName"));
+				strcpy(dbName, getConfigurationValue(configuration,"OptDB_dbName"));
 				sprintf(statementSearch, "select %s.PREDICTOR_CACHE_TABLE.val \nfrom %s.PREDICTOR_CACHE_TABLE,"
 									"%s.APPLICATION_PROFILE_TABLE \nwhere %s.PREDICTOR_CACHE_TABLE.is_residual = %d and "
 											"%s.PREDICTOR_CACHE_TABLE.dataset_size = "
@@ -90,31 +126,24 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 				if (row == NULL || par.cache == 0)
 				{
 					sprintf(debugMsg, "Last SQL statement returned 0 rows or cache is disabled. Invoking predictor...");debugMessage(debugMsg, par);
-					sprintf(path, "%s/%s/%s/logs", getConfigurationValue(configuration, "RESULTS_HOME"),readFolder(path), appId);
-					strcpy(subfolder, readFolder(path));
+
 					sprintf(cmd, "%s/%s/", path, subfolder);
 					sprintf(cmd, "%s*.lua", cmd);
 					strcpy(lua, ls(cmd, par));
 
 					char pattern[64], newpath[256];
 					sprintf(pattern, "Nodes = %d",(nNodes*currentCores));
-					/* Create unique extension (it can be improved) */
-					struct timeval tv;
-					gettimeofday(&tv,NULL);
+
 
 					/* Create unique LUA filename */
-					double extension = (double)tv.tv_usec;
+
 					sprintf(newpath, "/tmp/temp_%lf.lua", extension);
 					writeFile(newpath, replace(readFile(lua), pattern));
 
-					/* Create unique dagSim output filename */
-					double systemTime;
-					double stageTime;
-					char dagSimOutputPath[256];
-					sprintf(dagSimOutputPath, "/tmp/outputDagsim_%lf.txt", extension);
+
 
 					/* Using /tmp/temp.lua instead of lua variable, so the original file is never overwritten */
-					sprintf(cmd, "cd %s;./dagsim.sh %s -s > %s", getConfigurationValue(configuration, "DAGSIM_HOME"), newpath, dagSimOutputPath);
+					sprintf(cmd, "cd %s;./dagsim.sh %s -s > %s", getConfigurationValue(configuration, "DAGSIM_HOME"), newpath, predictorOutputPath);
 					sprintf(debugMsg, "Executing predictor: %s", cmd);debugMessage(debugMsg, par);
 					_run(cmd, par);
 
@@ -122,14 +151,14 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 					switch(flagDagsim)
 					{
 						case RESIDUAL_EXECUTION_TIME:
-							systemTime = atof(extractWord(extractRowN(readFile(dagSimOutputPath),3), 3));
-							stageTime = atof(extractWord(extractRowN(extractRowMatchingPattern(readFile(dagSimOutputPath), stage),1), 4));
+							systemTime = atof(extractWord(extractRowN(readFile(predictorOutputPath),3), 3));
+							stageTime = atof(extractWord(extractRowN(extractRowMatchingPattern(readFile(predictorOutputPath), stage),1), 4));
 							sprintf(output1, "%lf", (systemTime - stageTime));
 							sprintf(debugMsg, "Residual time: %s", output1);debugMessage(debugMsg, par);
 							break;
 
 						case WHOLE_EXECUTION_TIME:
-							strcpy(output1, extractWord(extractRowN(readFile(dagSimOutputPath),1),3));
+							strcpy(output1, extractWord(extractRowN(readFile(predictorOutputPath),1),3));
 							break;
 
 						default:
@@ -152,7 +181,7 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 					if (row == NULL)
 					{
 						sprintf(statement,"insert %s.PREDICTOR_CACHE_TABLE values('%s', %d, %d, '%s', %d, %lf);",
-							getConfigurationValue(configuration, "DB_dbName"),
+							getConfigurationValue(configuration, "OptDB_dbName"),
 							appId,
 							datasize,
 							TOTAL_NODES,

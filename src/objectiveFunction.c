@@ -85,7 +85,7 @@ double ObjFunctionComponent(sConfiguration *configuration, MYSQL *conn, sApplica
 	switch(pointer->mode)
 	{
 		case R_ALGORITHM:
-				sprintf(debugMsg,"ObjFunctionComponent W %d R_d %lf D %lf\n", pointer->w, pointer->R_d, pointer->Deadline_d);debugMessage(debugMsg, par);
+				sprintf(debugMsg,"ObjFunctionComponent W %lf R_d %lf D %lf\n", pointer->w, pointer->R_d, pointer->Deadline_d);debugMessage(debugMsg, par);
 				if (pointer->R_d > pointer->Deadline_d)
 					output = pointer->w * (pointer->R_d - pointer->Deadline_d);
 				else output = 0;
@@ -137,7 +137,7 @@ double ObjFunctionComponentApprox(sApplication * pointer, struct optJrParameters
 
 	/* Determine how the obj function needs to be calculated */
 
-	sprintf(debugMsg,"W %d R_d %lf D %lf\n", pointer->w, pointer->R_d, pointer->Deadline_d);debugMessage(debugMsg, par);
+	sprintf(debugMsg,"W %lf R_d %lf D %lf\n", pointer->w, pointer->R_d, pointer->Deadline_d);debugMessage(debugMsg, par);
 	if (pointer->R_d > pointer->Deadline_d)
 		output = pointer->w * (pointer->R_d - pointer->Deadline_d);
 	else output = 0;
