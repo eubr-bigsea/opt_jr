@@ -97,7 +97,7 @@ void debugMessage(char * string, struct optJrParameters par);
 void debugInformational(char * string, struct optJrParameters par);
 int doubleCompare(double, double);
 void DBerror(MYSQL *, char * );
-MYSQL * DBopen(char * , char * , char *, char * );
+MYSQL * DBopen(char * , char * , char *, char *, char * );
 void DBclose(MYSQL *conn);
 void DBinsertrow(MYSQL * , char *, char *, float );
 

@@ -104,7 +104,7 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 			case DAGSIM:
 				sprintf(debugMsg, "invokePredictor: session %s app %s checking cache on %d cores\n", sessionId, appId, TOTAL_NODES);debugMessage(debugMsg, par);
 				/* Check first if the estimate time has been already calculated */
-				strcpy(dbName, getConfigurationValue(configuration,"OptDB_dbName"));
+				strcpy(dbName, getConfigurationValue(configuration,"DB_dbName"));
 				sprintf(statementSearch, "select %s.PREDICTOR_CACHE_TABLE.val \nfrom %s.PREDICTOR_CACHE_TABLE,"
 									"%s.APPLICATION_PROFILE_TABLE \nwhere %s.PREDICTOR_CACHE_TABLE.is_residual = %d and "
 											"%s.PREDICTOR_CACHE_TABLE.dataset_size = "
@@ -181,7 +181,7 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 					if (row == NULL)
 					{
 						sprintf(statement,"insert %s.PREDICTOR_CACHE_TABLE values('%s', %d, %d, '%s', %d, %lf);",
-							getConfigurationValue(configuration, "OptDB_dbName"),
+							getConfigurationValue(configuration, "DB_dbName"),
 							appId,
 							datasize,
 							TOTAL_NODES,

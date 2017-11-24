@@ -210,7 +210,7 @@ void calculate_Nu(sConfiguration * configuration, MYSQL *conn, sApplication *fir
 
 	while (current != NULL)
 	{
-		//findBound(configuration, conn, getConfigurationValue(configuration, "OptDB_dbName"), current, par);
+		//findBound(configuration, conn, getConfigurationValue(configuration, "DB_dbName"), current, par);
 		if (rows > 0)
 		{
 			csi = getCsi(current->M/current->m, current->V/current->v);
@@ -276,7 +276,7 @@ void calculateBounds(sApplication * pointer,  sConfiguration * configuration, MY
 		//Retrieve nCores from the DB
 		sprintf(statement,
                         "select num_cores_opt, num_vm_opt from %s.OPTIMIZER_CONFIGURATION_TABLE where application_id='%s' and dataset_size=%d and deadline=%lf;"
-				, getConfigurationValue(configuration, "OptDB_dbName"), pointer->app_id, pointer->datasetSize, pointer->Deadline_d);
+				, getConfigurationValue(configuration, "DB_dbName"), pointer->app_id, pointer->datasetSize, pointer->Deadline_d);
 
 		MYSQL_ROW row = executeSQL(conn, statement, par);
 		if (row == NULL)

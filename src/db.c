@@ -64,7 +64,7 @@ MYSQL_ROW executeSQL(MYSQL *conn, char *statement, struct optJrParameters par)
 /*
  * Open a DB connection
  */
-MYSQL * DBopen(char * host, char * login, char * passw, char *dbName)
+MYSQL * DBopen(char * host, char * port, char * login, char * passw, char *dbName)
 {
 
 
@@ -77,7 +77,7 @@ MYSQL *con = mysql_init(NULL);
   }
 
   if (mysql_real_connect(con, host, login, passw,
-          dbName, 0, NULL, 0) == NULL) DBerror(con, "mysql_real_connect");
+          dbName, atoi(port), NULL, 0) == NULL) DBerror(con, "mysql_real_connect");
 
   return con;
 }
