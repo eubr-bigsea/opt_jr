@@ -1,6 +1,6 @@
 /*
 ##
-## Licensed under the Apache License, Version 2.0 (the "License");
+f## Licensed under the Apache License, Version 2.0 (the "License");
 ## you may not use this file except in compliance with the License.
 ## You may obtain a copy of the License at
 ##
@@ -222,9 +222,56 @@ void printApplication(sApplication *pointer, struct optJrParameters par)
 	char debugMsg[DEBUG_MSG];
 
 	sprintf(debugMsg, "session_app_id %s app_id %s  weight %lf nu %lf iterations to find the bound %d currentcores = %d nCores from DB = %d",
-			pointer->session_app_id, pointer->app_id, pointer->w, pointer->nu_d, pointer->boundIterations, pointer->currentCores_d, (int)pointer->nCores_DB_d);debugMessage(debugMsg, par);
+			pointer->session_app_id, pointer->app_id, pointer->w, pointer->nu_d, pointer->boundIterations, pointer->currentCores_d, (int)pointer->nCores_DB_d);
+	debugMessage(debugMsg, par);
 
 }
+
+/*
+ * 		Name:					readApplication
+ * 		Input parameters:		sApplication *pointer, struct optJrParameters par
+ * 		Description:			It prints the details of all the applications
+*/
+void printApplicationsParameters(sApplication *pointer, struct optJrParameters par)
+{
+	char debugMsg[DEBUG_MSG];
+
+	if (pointer == NULL)
+	{
+		printf("Fatal error: printApplicationsParameters: pointer cannot be null. Check inoput csv file\n");
+		exit(-1);
+	}
+	sprintf(debugMsg, "Applications list content (csv parameters only):");debugInformational(debugMsg, par);
+
+	while (pointer!=NULL)
+	{
+		printApplicationParameter(pointer, par);
+		pointer = pointer->next;
+	}
+
+}
+
+
+void printApplicationParameter(sApplication *pointer, struct optJrParameters par)
+{
+
+	char debugMsg[DEBUG_MSG];
+// # app_id, w, chi_0, chi_c, M, m, V, v, D, stage_id,dataset_size
+	sprintf(debugMsg, "session_app_id %s app_id %s  weight %lf "
+			"Chi_0 %lf Chi_C %lf M %lf m %lf V %lf v %lf Deadline %lf stage %s datasetsize %d",
+			pointer->session_app_id, pointer->app_id, pointer->w,
+			pointer->chi_0,
+			pointer->chi_C,
+			pointer->M,
+			pointer->m,
+			pointer->V,
+			pointer->v,
+			pointer->Deadline_d,
+			pointer->stage,
+			pointer->datasetSize);	debugMessage(debugMsg, par);
+}
+
+
 
 /*
  * CURRENTLY NOT USED -> WILL BE REMOVED AFTER TESTS HAVE BEEN CONPLETED

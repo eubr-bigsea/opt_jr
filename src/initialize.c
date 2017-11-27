@@ -24,7 +24,103 @@
 
 #include "initialize.h"
 
+sApplicationPointers * fixInitialSolution(sApplication *applications, struct optJrParameters par)
+{
+	sApplication * first;
+	int allocatedCores;
+	sApplicationPointers * first_LP = NULL;
+	int loopExit = 0;
+	sApplicationPointers *auxPointer;
+	int residualCores;
+	int N = par.number;
 
+	printf("\n\nfixInitialSolution\n\n");
+
+	allocatedCores = 0; // TODO To be changed into INT ->DONE
+
+	first = applications;
+
+	while (first != NULL)
+	{
+		int currentcores1 =first->currentCores_d;
+		double currentcores2=max(((int)(first->currentCores_d / first->V)) * first->V,first->V);
+
+
+		first->currentCores_d = max(((int)(first->currentCores_d / first->V)) * first->V,first->V);
+		if (first->currentCores_d > first->bound)
+			first->currentCores_d = first->bound;
+		else
+			{
+				printf("adding %s to ListPointers\n", first->app_id);
+				addApplicationPointer(&first_LP, first);
+			}
+
+		// Danilo Application (suffering) insert in the new list
+		// TODO Handle insert in such a way the list is sorted by weight -> DONE
+
+		allocatedCores+= first->currentCores_d;
+		printf("***fixInitialSolution FIXING CORES*** %s %d\n", first->app_id, first->currentCores_d);
+		first = first->next;
+	}
+	//readListPointers(first_LP);
+
+	printf("fixInitialSolution: allocatedCores %d\n", allocatedCores);
+
+	auxPointer = first_LP;
+
+
+
+	residualCores = N - allocatedCores;
+	int addedCores;
+
+
+	while (!loopExit&& (residualCores>0))
+	{
+
+		if (auxPointer == NULL) loopExit = 1;
+		else
+		{
+			// cores assignment
+
+			int potentialDeltaCores=((int)(residualCores / auxPointer->app->V) )* auxPointer->app->V;
+
+			//addedCores = MIN(, auxPointer->app->bound_d);
+
+			if ((auxPointer->app->currentCores_d + potentialDeltaCores) > auxPointer->app->bound){
+				addedCores = auxPointer->app->bound - auxPointer->app->currentCores_d ;
+				auxPointer->app->currentCores_d = auxPointer->app->bound;
+
+
+			}
+			else{
+				auxPointer->app->currentCores_d = auxPointer->app->currentCores_d + potentialDeltaCores;
+				addedCores=potentialDeltaCores;
+			}
+
+			if (auxPointer->app->currentCores_d == 0)
+			{
+				printf("\nFatal Error: FixInitialSolution: app %s has %d cores after fix\n", auxPointer->app->app_id, auxPointer->app->currentCores_d);
+				exit(-1);
+			}
+			if (addedCores > 0)
+			{
+				//auxPointer->app->currentCores_d+= addedCores;
+
+				printf("adding cores to App %s, %d \n", auxPointer->app->app_id, addedCores);
+
+				printf(" applicationid %s new cores %d moved cores %d\n", auxPointer->app->app_id, (int)auxPointer->app->currentCores_d, addedCores);
+
+				residualCores = residualCores - addedCores;
+			}
+			auxPointer = auxPointer->next;
+		}
+
+		if (residualCores == 0) loopExit = 1;
+	}
+	//readList(applications);
+
+	return first_LP;
+}
 
 
 /*
@@ -34,7 +130,7 @@
  * Description: It fixes the initial solution by reallocating the residual cores to the applications that may need more resources
  */
 
-sApplicationPointers * fixInitialSolution(sApplication *applications,  struct optJrParameters par)
+sApplicationPointers * fixInitialSolutionTOBECHECKED(sApplication *applications,  struct optJrParameters par)
 {
 	sApplication * first;
 	int allocatedCores;
@@ -48,7 +144,11 @@ sApplicationPointers * fixInitialSolution(sApplication *applications,  struct op
 	allocatedCores = 0;
 
 	first = applications;
-
+	if (first == NULL)
+	{
+		printf("Fatal error: first cannot be NULL\n");
+		exit(-1);
+	}
 	while (first != NULL)
 	{
 		//int currentcores1 =first->currentCores_d;
@@ -76,9 +176,13 @@ sApplicationPointers * fixInitialSolution(sApplication *applications,  struct op
 	residualCores = N - allocatedCores;
 	int addedCores;
 
-	while (!loopExit&& (residualCores>0))
+	while (!loopExit && (residualCores > 0))
 	{
-		if (CandidatePointer == NULL) loopExit = 1;
+		if (CandidatePointer == NULL)
+			{
+				printf("CandidatePointer is NULL\n");
+				loopExit = 1;
+			}
 		else
 		{
 			// cores assignment
@@ -139,7 +243,7 @@ void initialize(sConfiguration * configuration, MYSQL *conn, sApplication * appl
 			application_i->mode = R_ALGORITHM;
 			application_i->baseFO = ObjFunctionComponent(configuration, conn, application_i, par);
 			application_i->initialBaseFO = application_i->baseFO;
-			sprintf(debugMsg,"INITIALIZE BASE FO for APP %s baseFO =%lf", application_i->session_app_id, application_i->baseFO);debugMessage(debugMsg, par);
+			sprintf(debugMsg,"INITIALIZE BASE FO for APP %s %s baseFO =%lf", application_i->session_app_id, application_i->app_id, application_i->baseFO);debugMessage(debugMsg, par);
 			application_i = application_i->next;
 	}
 }

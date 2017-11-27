@@ -117,7 +117,7 @@ void  Bound(sConfiguration *configuration, MYSQL *conn, sApplication * pointer, 
 	//}
 
 	/* Update the record with bound values */
-	pointer->currentCores_d = BCores;
+	//pointer->currentCores_d = BCores;
 	pointer->R_d = BTime;
 	pointer->bound = BCores;
 
@@ -289,7 +289,7 @@ void calculateBounds(sApplication * pointer,  sConfiguration * configuration, MY
 		pointer->vm = atoi(row[1]);
 
 		Bound(configuration, conn, pointer, par);
-		sprintf(debugMsg,"A bound for %s has been calculated", pointer->session_app_id);
+		sprintf(debugMsg,"A bound for %s %s has been calculated (%d)", pointer->session_app_id, pointer->app_id, pointer->bound);
 		debugMessage(debugMsg, par);
 		pointer = pointer->next;
 	}

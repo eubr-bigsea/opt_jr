@@ -85,7 +85,7 @@ void  Bound(sConfiguration *, MYSQL *conn, sApplication *, struct optJrParameter
 void  calculate_Nu(sConfiguration *, MYSQL *, sApplication *,  struct optJrParameters);
 void calculateOpenMPBounds(sApplication * pointer, int n_threads, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par);
 void calculateBounds(sApplication * pointer, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par);
-void checkTotalNodes(int N, sApplication * pointer);
+void checkTotalNodes(int N, sApplication * pointer, struct optJrParameters par);
 
 float computeBeta(sAlphaBetaManagement );
 float computeAlpha(sAlphaBetaManagement , float );
@@ -144,6 +144,8 @@ char * parseArg(char * string, char * gap, int type);
 void printConfigurationFile(sConfiguration *pointer);
 
 void printApplications(sApplication *, struct optJrParameters);
+void printApplicationParameter(sApplication *pointer, struct optJrParameters par);
+void printApplicationsParameters(sApplication *pointer, struct optJrParameters par);
 void printApplication(sApplication *, struct optJrParameters);
 void printCandidate(sCandidates *, struct optJrParameters);
 void printOPT_JRPars(struct optJrParameters par );

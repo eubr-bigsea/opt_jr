@@ -18,7 +18,7 @@
 
 void debugBanner(char * string, struct optJrParameters par)
 {
-	if (par.debug == YES)
+	//if (par.debug == YES)
 	{
 		printf("<debug banner >                  ***************                  *************** \n");
 		printf("<debug banner >                  *************** %s *************** \n", string);
@@ -37,7 +37,7 @@ void debugMessage(char * string, struct optJrParameters par)
 
 void debugInformational(char * string, struct optJrParameters par)
 {
-	if (par.debug == YES)
+	//if (par.debug == YES)
 		printf("<debug information >: %s\n", string);
 }
 

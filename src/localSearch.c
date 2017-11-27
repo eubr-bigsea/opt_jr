@@ -34,20 +34,24 @@
  *
  */
 
-void checkTotalNodes(int N, sApplication * pointer)
+void checkTotalNodes(int N, sApplication * pointer, struct optJrParameters par)
 {
 	int total = 0;
+	char debugMsg[512];
 
+
+	debugBanner("checkTotalNodes", par);
 	while (pointer != NULL)
 	{
 		total+= pointer->currentCores_d;
 		if (total > N)
 		{
 			printf("Fatal Error: checkTotalNodes: Total current nodes (%d) exceeds maximum nodes number (%d)\n", total, N);
-			exit(-1);
+			//exit(-1);
 		}
 		pointer = pointer->next;
 	}
+	sprintf(debugMsg, "Total cores assignment so far: %d", total);debugMessage(debugMsg, par);
 }
 
 
@@ -101,7 +105,7 @@ void localSearch(sConfiguration * configuration, MYSQL *conn, sApplication * fir
 		// To Do: consider only the first MAX_PROMISING_CONFIGURATIONS of the Application -> DONE
 		while (sfirstCandidateApproximated != NULL)
 		{
-			checkTotalNodes(par.number, first);
+
 
 			sprintf(debugMsg, "Browsing CandidateApproximated Application");debugBanner(debugMsg, par);
 			/* Consider only the first MAX_PROMISING_CONFIGURATIONS (0 value means browse the entire Application) Application members */
@@ -179,6 +183,7 @@ void localSearch(sConfiguration * configuration, MYSQL *conn, sApplication * fir
 
 	// TODO Modify to recalculate only FO for apps i,j (use the above copies without invoke dagSim)
 	initialize(configuration, conn, first, par);
+
 
 }
 

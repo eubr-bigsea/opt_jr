@@ -51,7 +51,7 @@ int main(int argc, char **argv)
     sConfiguration *configuration = readConfigurationFile();
 
     /* Read the threads number */
-    par.numberOfThreads = atoi(getConfigurationValue(configuration, "THREADS_NUMBER"));
+    par.numberOfThreads = atoi(getConfigurationValue(configuration, "OPTIMIZE_NUM_PROCESSES"));
 
     /* Connect to the db */
     MYSQL *conn = DBopen(
@@ -68,29 +68,33 @@ int main(int argc, char **argv)
 
     /* Load applications details from csv file */
     sApplication *first = parseCsv(configuration, par);
+    printApplicationsParameters(first, par);
+
+    /* Calculate the bounds */
+       gettimeofday(&tv_initial_bounds, NULL);
+       if (par.numberOfThreads == 0) calculateBounds(first, configuration, conn, par);
+       	else calculateOpenMPBounds(first, par.numberOfThreads, configuration, conn, par);
+       printApplications(first, par);
+        gettimeofday(&tv_final_bounds, NULL);
 
     /* Calculate the indices */
     gettimeofday(&tv_initial_nu, NULL);
     calculate_Nu(configuration, conn, first,  par);
+    checkTotalNodes(par.number, first, par);
     gettimeofday(&tv_final_nu, NULL);
-
-    /* Calculate the bounds */
-    gettimeofday(&tv_initial_bounds, NULL);
-    if (par.numberOfThreads == 0) calculateBounds(first, configuration, conn, par);
-    	else calculateOpenMPBounds(first, par.numberOfThreads, configuration, conn, par);
     printApplications(first, par);
-     gettimeofday(&tv_final_bounds, NULL);
-
 
      /* Fix initial solution */
-    gettimeofday(&tv_initial_fix, NULL);
-    sApplicationPointers *firstPointer = fixInitialSolution(first, par);
-    gettimeofday(&tv_final_fix, NULL);
+     gettimeofday(&tv_initial_fix, NULL);
+     sApplicationPointers *firstPointer = fixInitialSolution(first, par);
+     gettimeofday(&tv_final_fix, NULL);
+     printApplications(first, par);
 
     /* Calculate baseFO for each application */
     gettimeofday(&tv_initial_init, NULL);
     initialize(configuration, conn, first, par);
     gettimeofday(&tv_final_init, NULL);
+
 
     /* Invoke localSearch */
     gettimeofday(&tv_initial_locals, NULL);

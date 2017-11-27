@@ -121,7 +121,7 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 									dbName,appId, dbName,datasize, dbName,TOTAL_NODES, dbName, stage);
 
 				MYSQL_ROW row = executeSQL(conn, statementSearch, par);
-				sprintf(debugMsg, "statement %s\n", statementSearch);debugMessage(debugMsg, par);
+				//sprintf(debugMsg, "statement %s\n", statementSearch);debugMessage(debugMsg, par);
 
 				if (row == NULL || par.cache == 0)
 				{
@@ -139,8 +139,6 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 
 					sprintf(newpath, "/tmp/temp_%lf.lua", extension);
 					writeFile(newpath, replace(readFile(lua), pattern));
-
-
 
 					/* Using /tmp/temp.lua instead of lua variable, so the original file is never overwritten */
 					sprintf(cmd, "cd %s;./dagsim.sh %s -s > %s", getConfigurationValue(configuration, "DAGSIM_HOME"), newpath, predictorOutputPath);
