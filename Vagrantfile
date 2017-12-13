@@ -9,6 +9,7 @@ Vagrant.configure("2") do |config|
   end
   config.vm.provision "shell", inline: <<-SHELL
      adduser work --gecos "First Last,RoomNumber,WorkPhone,HomePhone" --disabled-password
+     adduser work sudo
      export DEBIAN_FRONTEND=noninteractive
      apt -y update
      apt -y install gcc make openmpi-bin openmpi-doc libopenmpi-dev libmysqlclient-dev
@@ -19,6 +20,7 @@ Vagrant.configure("2") do |config|
      cd /home/work
      chown -R work:work opt_jr
      cp /home/work/opt_jr/wsi_config.xml /home/work/wsi_config.xml
+     chown work:work wsi_config.xml
      export temp=$(cat /home/work/opt_jr/wsi_config.xml|grep DB_pass)
      export MYSQL_ROOT_PASSWORD=$(echo $temp| awk -v FS="(>|<)" '{print $3}')
      echo "MYSQL root password is $MYSQL_ROOT_PASSWORD"
