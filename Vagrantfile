@@ -1,5 +1,5 @@
 Vagrant.configure("2") do |config|
-#  config.vm.network "public_network", ip: "192.168.0.17"
+  config.vm.network "public_network", ip: "x.x.x.x", bridge: "eth0"
   config.vm.box = "ubuntu/xenial64"
   config.vm.provider "virtualbox" do |vb|
      vb.memory = "4096"
@@ -48,5 +48,7 @@ Vagrant.configure("2") do |config|
      cd /home/work
      chown -R work:work dagSim
      chown -R work:work Dagsim
+     route add default gw x.x.x.x 
+     route del default gw 10.0.2.2
   SHELL
 end
