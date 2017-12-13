@@ -18,6 +18,7 @@ Vagrant.configure("2") do |config|
      make
      cd /home/work
      chown -R work:work opt_jr
+     cp /home/work/opt_jr/wsi_config.xml /home/work/wsi_config.xml
      export temp=$(cat /home/work/opt_jr/wsi_config.xml|grep DB_pass)
      export MYSQL_ROOT_PASSWORD=$(echo $temp| awk -v FS="(>|<)" '{print $3}')
      echo "MYSQL root password is $MYSQL_ROOT_PASSWORD"
@@ -31,5 +32,21 @@ Vagrant.configure("2") do |config|
      mysql -uroot -p$MYSQL_ROOT_PASSWORD bigsea < /home/work/wsi/Database/insertFakeProfile.sql
      mysql -uroot -p$MYSQL_ROOT_PASSWORD bigsea < /home/work/opt_jr/OPTIMIZER_CONFIGURATION_TABLE.sql
      mysql -uroot -p$MYSQL_ROOT_PASSWORD bigsea < /home/work/opt_jr/PREDICTOR_CACHE_TABLE.sql
+     git clone https://github.com/eubr-bigsea/OPT_DATA_CONFIG
+     tar zxvf LogP8_1.tar.gz
+     tar zxvf LogP8_2.tar.gz
+     tar zxvf LogP8_3.tar.gz
+     tar zxvf LogP8_4.tar.gz
+     cd /howme/work
+     chown -R work:work OPT_DATA_CONFIG
+     git clone https://github.com/eubr-bigsea/dagSim
+     cd dagSim
+     make
+     chmod ugo+x dagsim.sh
+     mkdir /home/work/Dagsim
+     cp -r ./* /home/work/Dagsim
+     cd /home/work
+     chown -R work:work dagSim
+     chown -R work:work Dagsim
   SHELL
 end
