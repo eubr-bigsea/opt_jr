@@ -20,7 +20,8 @@
 #include "db.h"
 #include "list.h"
 
-
+#define SINGLE_THREAD 0
+#define MULTI_THREAD 1
 
 #define DEBUG_MSG 512
 
@@ -75,7 +76,7 @@
 
 void addApplicationPointer(sApplicationPointers ** ,  sApplication *);
 void addStatistics(sStatistics ** , sStatistics ** , int , int, double );
-void addApplication(sApplication ** ,  sApplication **, char *, char *, double , double  , double , double , double , double , double , double , double, char *, int  );
+void addApplication(struct optJrParameters par, sConfiguration *, sApplication ** ,  sApplication **, char *, char *, double , double  , double , double , double , double , double , double , double, char *, int  );
 sCandidates * approximatedLoop(sApplication *, int *, struct optJrParameters );
 void addCandidate(sCandidates ** , sCandidates ** ,  sApplication * , sApplication * , int , int , double, double, double);
 
@@ -84,6 +85,7 @@ void  Bound(sConfiguration *, MYSQL *conn, sApplication *, struct optJrParameter
 
 void  calculate_Nu(sConfiguration *, MYSQL *, sApplication *,  struct optJrParameters);
 void calculateOpenMPBounds(sApplication * pointer, int n_threads, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par);
+void calculate_nui(sApplication *current, double nu_1, int tot, int N);
 void calculateBounds(sApplication * pointer, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par);
 void checkTotalNodes(int N, sApplication * pointer, struct optJrParameters par);
 
@@ -110,6 +112,7 @@ char * extractRowN(char *, int );
 char * extractRowMatchingPattern(char *text, char *pattern);
 
 sApplicationPointers * fixInitialSolution(sApplication *applications,  struct optJrParameters);
+int fileExist(char *filename);
 void findBound(sConfiguration *, MYSQL *conn, char *,  sApplication *, struct optJrParameters);
 void freeStatistics(sStatistics * );
 void freeParameters(sApplication * pointer);
@@ -124,7 +127,8 @@ char *getConfigurationValue(sConfiguration *pointer, char * variable);
 double getCsi(double , double );
 
 void initialize(sConfiguration * configuration, MYSQL *conn, sApplication * application_i, struct optJrParameters par);
-char* invokePredictor(sConfiguration * , MYSQL *, int , int , char * , int ,  char *, char *, char *, struct optJrParameters, int);
+char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int currentCores, char *sessionId, char *appId, char *stage,
+		struct optJrParameters par, int flagDagsim, char*, char *, int);
 void invokePredictorOpenMP(sCandidates *sfirstCandidateApproximated, struct optJrParameters, sConfiguration *configuration);
 
 void localSearch(sConfiguration *, MYSQL *conn, sApplication *, struct optJrParameters);
@@ -156,7 +160,7 @@ void readStatistics(sStatistics *, struct optJrParameters);
 
 void readCandidates(sCandidates *, struct optJrParameters);
 void readApplicationPointers(sApplicationPointers *, struct optJrParameters);
-char *readFolder(char *);
+char *readFolder(char *, int);
 char * replace(char * , char *);
 int read_line(FILE *, char *, size_t );
 char * readFile(char * );
@@ -165,11 +169,14 @@ void restoreInitialBaseFO(sApplication * pointer, struct optJrParameters par);
 MYSQL_ROW retrieveTimeFromDBCash(MYSQL *conn, char *sessionId, char *appId, int datasize, int ncores );
 char * _run(char *,  struct optJrParameters );
 
+char * setLuaFilename(sApplication *, sConfiguration * configuration, char *appId, struct optJrParameters par, char * );
 void split (char str[], int *a, int *b);
 sApplication * searchApplication(sApplication * , char *);
 void start(sConfiguration *, int , int , char **, int );
 
 void Usage();
+void updateLundstromConfig(sConfiguration *, char *, int );
+void updateLundstromConfigMP(char *filename, char *buf);
 
 void writeResults(MYSQL *conn, char *,sApplication *, struct optJrParameters);
 void writeFile(const char *, const char *);

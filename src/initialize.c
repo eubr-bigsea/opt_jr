@@ -19,7 +19,6 @@
 #include <string.h>
 #include <math.h>
 #include <omp.h>
-#include <mpi.h>
 #include <sys/time.h>
 
 #include "initialize.h"
@@ -35,18 +34,12 @@ sApplicationPointers * fixInitialSolution(sApplication *applications, struct opt
 	int N = par.number;
 
 	printf("\n\nfixInitialSolution\n\n");
-
 	allocatedCores = 0; // TODO To be changed into INT ->DONE
-
 	first = applications;
 
 	while (first != NULL)
 	{
-		int currentcores1 =first->currentCores_d;
-		double currentcores2=max(((int)(first->currentCores_d / first->V)) * first->V,first->V);
-
-
-		first->currentCores_d = max(((int)(first->currentCores_d / first->V)) * first->V,first->V);
+		first->currentCores_d = max(((int)(first->currentCores_d / first->V)) * first->V, first->V);
 		if (first->currentCores_d > first->bound)
 			first->currentCores_d = first->bound;
 		else
@@ -54,43 +47,27 @@ sApplicationPointers * fixInitialSolution(sApplication *applications, struct opt
 				printf("adding %s to ListPointers\n", first->app_id);
 				addApplicationPointer(&first_LP, first);
 			}
-
-		// Danilo Application (suffering) insert in the new list
-		// TODO Handle insert in such a way the list is sorted by weight -> DONE
-
 		allocatedCores+= first->currentCores_d;
 		printf("***fixInitialSolution FIXING CORES*** %s %d\n", first->app_id, first->currentCores_d);
 		first = first->next;
 	}
-	//readListPointers(first_LP);
-
 	printf("fixInitialSolution: allocatedCores %d\n", allocatedCores);
 
 	auxPointer = first_LP;
-
-
-
 	residualCores = N - allocatedCores;
 	int addedCores;
 
-
-	while (!loopExit&& (residualCores>0))
+	while (!loopExit && (residualCores>0))
 	{
-
 		if (auxPointer == NULL) loopExit = 1;
 		else
 		{
 			// cores assignment
-
 			int potentialDeltaCores=((int)(residualCores / auxPointer->app->V) )* auxPointer->app->V;
-
 			//addedCores = MIN(, auxPointer->app->bound_d);
-
 			if ((auxPointer->app->currentCores_d + potentialDeltaCores) > auxPointer->app->bound){
 				addedCores = auxPointer->app->bound - auxPointer->app->currentCores_d ;
 				auxPointer->app->currentCores_d = auxPointer->app->bound;
-
-
 			}
 			else{
 				auxPointer->app->currentCores_d = auxPointer->app->currentCores_d + potentialDeltaCores;
@@ -105,9 +82,7 @@ sApplicationPointers * fixInitialSolution(sApplication *applications, struct opt
 			if (addedCores > 0)
 			{
 				//auxPointer->app->currentCores_d+= addedCores;
-
 				printf("adding cores to App %s, %d \n", auxPointer->app->app_id, addedCores);
-
 				printf(" applicationid %s new cores %d moved cores %d\n", auxPointer->app->app_id, (int)auxPointer->app->currentCores_d, addedCores);
 
 				residualCores = residualCores - addedCores;

@@ -18,10 +18,14 @@
 #include <string.h>
 #include <math.h>
 #include <omp.h>
-#include <mpi.h>
 #include <sys/time.h>
 
 #include "predictor.h"
+
+
+
+
+
 
 /*
  * Name: invokePredictor
@@ -30,18 +34,24 @@
  * Description: It invokes a predictor (dagSim/Lundstrom). First it checks if an estimate of the execution time is already stored in the DB; if not, it invokes the actual predictor
  * 				and stores the result on DB cache table.
  */
-char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, int currentCores, char * memory, int datasize,  char *sessionId, char *appId, char *stage, struct optJrParameters par, int flagDagsim)
+char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int currentCores, char *sessionId, char *appId, char *stage,
+		struct optJrParameters par, int flagDagsim, char * luafilename, char *results, int mode)
 {
 	char parameters[1024];
 	char cmd[1024];
-	char path[1024];
+
 	char lua[1024];
-	char subfolder[1024];
+
 	char statementSearch[1024], statement[1024];
 	char debugMsg[DEBUG_MSG];
 	char dbName[64];
-	char dir[1024];
-	int TOTAL_NODES = nNodes * currentCores;
+
+
+	if (currentCores == 0)
+	{
+		printf("Fatal Error: invokePredictor: currentCores cannot be equal zero\n");
+		exit(-1);
+	}
 	/* Create unique extension */
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
@@ -54,16 +64,6 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 	}
 	//debugBanner("invokePredictor", par);
 
-	if (nNodes == 0)
-	{
-		printf("Fatal error: invokePredictor; nNodes cannot be 0\n");
-		exit(-1);
-	}
-	/* Consider always the same log folder and lua file (replacing "on the fly" the number of nodes)
-	 This is possible because the variance between the log folders is small*/
-	strcpy(path, getConfigurationValue(configuration, "RESULTS_HOME"));
-	strcpy(dir, readFolder(path));
-
 	/* Create unique dagSim output filename */
 	double systemTime;
 	double stageTime;
@@ -71,28 +71,41 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 	sprintf(predictorOutputPath, "/tmp/outputDagsim_%lf.txt", extension);
 
 	/* Extract nodes, cores, dataset and memory from the subfolder name */
-	char name[512];
-	strcpy(name, readFolder(path));
+
 	char _nodes[8], _cores[8], _memory[8], _dataset[8], temp[8];
 
+	char *dir = (char *)malloc(1024);
 
-	strcpy(_nodes, extractItem(name, "", "_"));
-	strcpy(_cores, extractItem(name, "_", "_"));strcpy(temp, _cores);
-	strcpy(_memory, extractItem(name, strcat(temp, "_"), "_"));strcpy(temp, _memory);
-	strcpy(_dataset, extractItem(name, strcat(temp, "_"), NULL));
+	strcpy(dir, getConfigurationValue(configuration, results));
+	strcpy(dir, readFolder(dir, 1));
 
-	/* Determine the data log folder for the predictor */
-	sprintf(path, "%s/%s/%s/logs", getConfigurationValue(configuration, "RESULTS_HOME"),readFolder(path), appId);
-	strcpy(subfolder, readFolder(path));
+	strcpy(_nodes, extractItem(dir, "", "_"));
+
+	strcpy(_cores, extractItem(dir, "_", "_"));
+
+	sprintf(temp, "%s_%s_", _nodes, _cores);
+	strcpy(_memory, extractItem(dir, temp, "_"));
+
+	sprintf(temp, "%s_%s_%s_", _nodes, _cores, _memory);
+	strcpy(_dataset, extractItem(dir, temp, NULL));
 
 
+	//int TOTAL_NODES = atoi(_nodes) * currentCores;
+	int TOTAL_NODES = currentCores;
+	//printf("_nodes %s _cores %s _memory %s _dataset %s\ TOTAL_NODES %d\n", _nodes, _cores, _memory, _dataset, TOTAL_NODES);exit(12);
+
+
+	MYSQL_ROW row = NULL;
 	/* Determine the predictor to invoke */
 	switch(par.predictor)
 	{
 			case LUNDSTROM:
-
-				sprintf(parameters, "-n %s -c %s -r %s -d %s -q %s -p spark > %s", _nodes, _cores, _memory, _dataset, appId, predictorOutputPath);
-				sprintf(cmd, "cd %s;python run.py %s", getConfigurationValue(configuration, "LUNDSTROM_HOME"), parameters);
+				/* Adjust first the config file */
+				//updateLundstromConfig(configuration, results, mode);
+				sprintf(parameters, "-n %s -c %s -r %s -d %s -q %s -p spark -k %d > %s", _nodes, _cores, _memory, _dataset, appId, TOTAL_NODES, predictorOutputPath);
+				//if (strcmp(results, "RESULTS_HOME") == 0)
+						sprintf(cmd, "cd %s;python run.py %s", getConfigurationValue(configuration, "LUNDSTROM_HOME"), parameters);
+				//				else sprintf(cmd, "cd %s;python run.py %s", getConfigurationValue(configuration, "ALTERNATIVE_LUNDSTROM_HOME"), parameters);
 				printf("%s\n", cmd);
 				/* Execute predictor */
 				_run(cmd, par);
@@ -102,14 +115,16 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 						"predicted\": \"", "\""));
 				break;
 			case DAGSIM:
-				sprintf(debugMsg, "invokePredictor: session %s app %s checking cache on %d cores\n", sessionId, appId, TOTAL_NODES);debugMessage(debugMsg, par);
-				/* Check first if the estimate time has been already calculated */
-				strcpy(dbName, getConfigurationValue(configuration,"DB_dbName"));
-				sprintf(statementSearch, "select %s.PREDICTOR_CACHE_TABLE.val \nfrom %s.PREDICTOR_CACHE_TABLE,"
+				if (par.cache == YES)
+				{
+					sprintf(debugMsg, "invokePredictor: session %s app %s checking cache on %d cores\n", sessionId, appId, TOTAL_NODES);debugMessage(debugMsg, par);
+					/* Check first if the estimate time has been already calculated */
+					strcpy(dbName, getConfigurationValue(configuration,"DB_dbName"));
+					sprintf(statementSearch, "select %s.PREDICTOR_CACHE_TABLE.val \nfrom %s.PREDICTOR_CACHE_TABLE,"
 									"%s.APPLICATION_PROFILE_TABLE \nwhere %s.PREDICTOR_CACHE_TABLE.is_residual = %d and "
 											"%s.PREDICTOR_CACHE_TABLE.dataset_size = "
 									"%s.APPLICATION_PROFILE_TABLE.dataset_size and\n 	"
-									"%s.PREDICTOR_CACHE_TABLE.application_id=\'%s\' and %s.PREDICTOR_CACHE_TABLE.dataset_size=%d  "
+									"%s.PREDICTOR_CACHE_TABLE.application_id=\'%s\' and %s.PREDICTOR_CACHE_TABLE.dataset_size=%s  "
 									"\nand %s.PREDICTOR_CACHE_TABLE.num_cores = %d and %s.PREDICTOR_CACHE_TABLE.stage = \'%s\';\n",
 									dbName,
 									dbName,
@@ -118,22 +133,17 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 									flagDagsim,
 									dbName,
 									dbName,
-									dbName,appId, dbName,datasize, dbName,TOTAL_NODES, dbName, stage);
+									dbName,appId, dbName,_dataset, dbName,TOTAL_NODES, dbName, stage);
 
-				MYSQL_ROW row = executeSQL(conn, statementSearch, par);
+				 row = executeSQL(conn, statementSearch, par);
 				//sprintf(debugMsg, "statement %s\n", statementSearch);debugMessage(debugMsg, par);
+				}
 
-				if (row == NULL || par.cache == 0)
+				if (row == NULL || par.cache == NO)
 				{
-					sprintf(debugMsg, "Last SQL statement returned 0 rows or cache is disabled. Invoking predictor...");debugMessage(debugMsg, par);
-
-					sprintf(cmd, "%s/%s/", path, subfolder);
-					sprintf(cmd, "%s*.lua", cmd);
-					strcpy(lua, ls(cmd, par));
-
+					strcpy(lua, luafilename);
 					char pattern[64], newpath[256];
-					sprintf(pattern, "Nodes = %d",(nNodes*currentCores));
-
+					sprintf(pattern, "Nodes = %d",TOTAL_NODES);
 
 					/* Create unique LUA filename */
 
@@ -172,29 +182,31 @@ char* invokePredictor(sConfiguration * configuration, MYSQL *conn, int nNodes, i
 					}
 
 
-
-					/* Update the db cash table with a new value */
-					/* Check again that no other MPI opt_jr instance has updated the DB */
-					row = executeSQL(conn, statementSearch, par);
-					if (row == NULL)
+					if (par.cache == YES)
 					{
-						sprintf(statement,"insert %s.PREDICTOR_CACHE_TABLE values('%s', %d, %d, '%s', %d, %lf);",
+						/* Update the db cash table with a new value */
+						/* Check again that no other MPI opt_jr instance has updated the DB */
+						row = executeSQL(conn, statementSearch, par);
+						if (row == NULL)
+						{
+							sprintf(statement,"insert %s.PREDICTOR_CACHE_TABLE values('%s', %s, %d, '%s', %d, %lf);",
 							getConfigurationValue(configuration, "DB_dbName"),
 							appId,
-							datasize,
+							_dataset,
 							TOTAL_NODES,
 							stage,
 							flagDagsim,
 							atof(output1)
 							);
-						sprintf(debugMsg, "Executing %s", statement);debugMessage(debugMsg, par);
-						if (mysql_query(conn, statement))
-						{
-							char error[512];
-							sprintf(error, " %s", statement);
-							DBerror(conn, error);
-						}
+							sprintf(debugMsg, "Executing %s", statement);debugMessage(debugMsg, par);
+							if (mysql_query(conn, statement))
+							{
+								char error[512];
+								sprintf(error, " %s", statement);
+								DBerror(conn, error);
+							}
 
+						}
 					}
 
 				} /* If no value was stored in the cache */

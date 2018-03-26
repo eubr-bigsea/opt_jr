@@ -41,7 +41,7 @@ void printOPT_JRPars(struct optJrParameters par )
  * 		Description:			This function adds all the information regarding an application into a weight-sorted list
  *
  */
-void addApplication(sApplication ** first,   sApplication ** current, char *session_app_id, char * app_id, double w, double chi_0, double chi_C, double m, double M, double V, double v, double Deadline_d, double csi,
+void addApplication(struct optJrParameters par, sConfiguration * configuration, sApplication ** first,   sApplication ** current, char *session_app_id, char * app_id, double w, double chi_0, double chi_C, double M, double m, double V, double v, double Deadline_d, double csi,
 		char * StageId, int datasetSize)
 {
 	  sApplication *new = (sApplication*) malloc(sizeof(sApplication));
@@ -77,8 +77,14 @@ void addApplication(sApplication ** first,   sApplication ** current, char *sess
 	  new->Deadline_d = Deadline_d;
 	  new->csi = csi;
 	  new->boundIterations = 0;
+	  new->bound = 0;
 	  new->currentCores_d = 0;
 	  new->nCores_DB_d = 0;
+
+	  char dataset[16];
+	  sprintf(dataset, "%d", datasetSize);
+	  strcpy(new->luafilename, setLuaFilename(new,configuration, app_id, par, dataset ));
+
 
 	  new->stage = (char *)malloc(1024);
 	  if (new->stage == NULL)
@@ -221,8 +227,22 @@ void printApplication(sApplication *pointer, struct optJrParameters par)
 
 	char debugMsg[DEBUG_MSG];
 
-	sprintf(debugMsg, "session_app_id %s app_id %s  weight %lf nu %lf iterations to find the bound %d currentcores = %d nCores from DB = %d",
-			pointer->session_app_id, pointer->app_id, pointer->w, pointer->nu_d, pointer->boundIterations, pointer->currentCores_d, (int)pointer->nCores_DB_d);
+	sprintf(debugMsg, "session_app_id %s "
+			"app_id %s  "
+			"weight %lf "
+			"nu %lf "
+			"iterations to find the bound %d "
+			"currentcores = %d "
+			"bound = %d "
+			"nCores from DB = %d",
+			pointer->session_app_id,
+			pointer->app_id,
+			pointer->w,
+			pointer->nu_d,
+			pointer->boundIterations,
+			pointer->currentCores_d,
+			pointer->bound,
+			(int)pointer->nCores_DB_d);
 	debugMessage(debugMsg, par);
 
 }
@@ -274,7 +294,7 @@ void printApplicationParameter(sApplication *pointer, struct optJrParameters par
 
 
 /*
- * CURRENTLY NOT USED -> WILL BE REMOVED AFTER TESTS HAVE BEEN CONPLETED
+ * CURRENTLY NOT USED -> WILL BE REMOVED AFTER TESTS HAVE BEEN COMPLETED
  */
 void commitAssignment(sApplication *pointer, char *session_appId,  double DELTA, struct optJrParameters par)
 {

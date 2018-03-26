@@ -18,11 +18,26 @@
 #include <string.h>
 #include <math.h>
 #include <omp.h>
-#include <mpi.h>
 #include <sys/time.h>
 
 
 #include "openMP.h"
+
+
+void updateLundstromConfigMP(char *filename, char *buf)
+{
+
+FILE * fp_out;
+#pragma omp parallel private(fp_out)
+   {
+		fp_out = fopen(filename, "w" );
+         fwrite(buf, sizeof(buf), 1, fp_out);
+         fclose(fp_out);
+   }
+
+}
+
+
 
 void calculateOpenMPBounds(sApplication * pointer, int n_threads, sConfiguration * configuration, MYSQL *conn, struct optJrParameters par)
 {
@@ -44,7 +59,11 @@ void calculateOpenMPBounds(sApplication * pointer, int n_threads, sConfiguration
  	//call findbound in parallel;
 	#pragma omp parallel num_threads(n_threads)
 	{
+#if defined(_OPENMP)
 		int ID=omp_get_thread_num();
+#else
+                int ID = 0;
+#endif
 		int j=0;
 		char debugMsg[DEBUG_MSG];
 		char statement[256];
@@ -73,10 +92,15 @@ void calculateOpenMPBounds(sApplication * pointer, int n_threads, sConfiguration
 				}
 
 				t_pointer[ID]->nCores_DB_d = atoi(row[0]);
+				if (t_pointer[ID]->nCores_DB_d == 0)
+				{
+					printf("Fatal error: currentCores retrieved from DB cannot be zero\n");
+					exit(-1);
+				}
 				t_pointer[ID]->vm = atoi(row[1]);
 
 				Bound(configuration, conn2[ID], t_pointer[ID], par);
-				sprintf(debugMsg,"A bound for %s has been calculated", t_pointer[ID]->session_app_id);
+				printf(debugMsg,"A bound for %s has been calculated (%d)", t_pointer[ID]->session_app_id, t_pointer[ID]->bound);
 				debugMessage(debugMsg, par);
 			}
 			t_pointer[ID]=t_pointer[ID]->next;
@@ -118,7 +142,11 @@ void invokePredictorOpenMP(sCandidates * pointer,  struct optJrParameters par, s
  	//call invokePredictorInAdvance in parallel
 	#pragma omp parallel num_threads(n_threads)
 	{
+#if defined(_OPENMP)
 		int ID=omp_get_thread_num();
+#else
+                int ID = 0;
+#endif
 		int j=0;
 
 
@@ -128,14 +156,14 @@ void invokePredictorOpenMP(sCandidates * pointer,  struct optJrParameters par, s
 
 			if(pos==ID)
 			{
-				//sprintf(debugMsg,"invokePredictorOpenMP: pos= %d, j=%d, ID=%d n_threads=%d", pos,j,ID, n_threads);debugMessage(debugMsg, par);
-				//sprintf(debugMsg,"invokePredictorOpenMP of app number %d called from thread %d",j,ID);debugMessage(debugMsg, par);
+				sprintf(debugMsg,"invokePredictorOpenMP: pos= %d, j=%d, ID=%d n_threads=%d", pos,j,ID, n_threads);debugMessage(debugMsg, par);
+				sprintf(debugMsg,"invokePredictorOpenMP of app number %d called from thread %d",j,ID);debugMessage(debugMsg, par);
 				t_pointer[ID]->real_i = ObjFunctionComponent(configuration, conn2[ID], t_pointer[ID]->app_i, par);
 				t_pointer[ID]->nodes_i = t_pointer[ID]->app_i->currentCores_d;
 				t_pointer[ID]->real_j = ObjFunctionComponent(configuration, conn2[ID], t_pointer[ID]->app_j, par);
 											t_pointer[ID]->nodes_j = t_pointer[ID]->app_j->currentCores_d;
 
-				//sprintf(debugMsg,"invokePredictorOpenMP: app_i %s app_j %s real_i %lf real_j %lf\n", t_pointer[ID]->app_i->app_id, t_pointer[ID]->app_j->app_id, t_pointer[ID]->real_i, t_pointer[ID]->real_j);debugMessage(debugMsg, par);
+				sprintf(debugMsg,"invokePredictorOpenMP: app_i %s app_j %s real_i %lf real_j %lf\n", t_pointer[ID]->app_i->app_id, t_pointer[ID]->app_j->app_id, t_pointer[ID]->real_i, t_pointer[ID]->real_j);debugMessage(debugMsg, par);
 			}
 			t_pointer[ID]=t_pointer[ID]->next;
 			++j;

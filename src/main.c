@@ -44,7 +44,6 @@ int main(int argc, char **argv)
         				tv_final_main;
 
     /* Parse the command line */
-
     par = parseCommandLine(argv, argc);
 
     /* Upload the configuration file ($HOME/wsi_config.xml) into a list */
@@ -68,21 +67,26 @@ int main(int argc, char **argv)
 
     /* Load applications details from csv file */
     sApplication *first = parseCsv(configuration, par);
+    /*sApplication *current = NULL;
+    sApplication *first = NULL;
+    addApplication(par, configuration, &first, &current, "application_1483347394756_0","query26",1, 18906.97517,12945621.49, 28,8,4,2,200000,3.5, "J4S5",500);*/
+
     printApplicationsParameters(first, par);
 
     /* Calculate the bounds */
-       gettimeofday(&tv_initial_bounds, NULL);
-       if (par.numberOfThreads == 0) calculateBounds(first, configuration, conn, par);
+    gettimeofday(&tv_initial_bounds, NULL);
+    if (par.numberOfThreads == 0) calculateBounds(first, configuration, conn, par);
        	else calculateOpenMPBounds(first, par.numberOfThreads, configuration, conn, par);
-       printApplications(first, par);
-        gettimeofday(&tv_final_bounds, NULL);
+    printApplications(first, par);
+    gettimeofday(&tv_final_bounds, NULL);
+
 
     /* Calculate the indices */
     gettimeofday(&tv_initial_nu, NULL);
-    calculate_Nu(configuration, conn, first,  par);
+    calculate_Nu(configuration, conn, first,  par);printApplications(first, par);
     checkTotalNodes(par.number, first, par);
     gettimeofday(&tv_final_nu, NULL);
-    printApplications(first, par);
+
 
      /* Fix initial solution */
      gettimeofday(&tv_initial_fix, NULL);
@@ -111,14 +115,25 @@ int main(int argc, char **argv)
     DBclose(conn);
 
     gettimeofday(&tv_final_main, NULL);
+    sprintf(debugMsg, "FixInitial step elapsed time: %lf\n", elapsedTime(tv_initial_fix, tv_final_fix));printf(debugMsg);
+    sprintf(debugMsg, "Findbounds  elapsed time: %lf\n", elapsedTime(tv_initial_bounds, tv_final_bounds));printf(debugMsg);
+    sprintf(debugMsg, "Initialization elapsed time %lf\n", elapsedTime(tv_initial_nu, tv_final_nu));printf(debugMsg);
+    sprintf(debugMsg, "LocalSearch step elapsed time: %lf\n", elapsedTime(tv_initial_locals, tv_final_locals));printf(debugMsg);
+    sprintf(debugMsg, "Overall elapsed time: %lf\n", elapsedTime(tv_initial_main, tv_final_main));printf(debugMsg);
+
 
     //printOutput(first);
-    sprintf(debugMsg, "FixInitial step elapsed time: %lf\n", elapsedTime(tv_initial_fix, tv_final_fix));debugMessage(debugMsg, par);
-    sprintf(debugMsg, "Findbounds  elapsed time: %lf\n", elapsedTime(tv_initial_bounds, tv_final_bounds));debugMessage(debugMsg, par);
-    sprintf(debugMsg, "Initialization elapsed time %lf\n", elapsedTime(tv_initial_nu, tv_final_nu));debugMessage(debugMsg, par);
-    sprintf(debugMsg, "LocalSearch step elapsed time: %lf\n", elapsedTime(tv_initial_locals, tv_final_locals));debugMessage(debugMsg, par);
-    sprintf(debugMsg, "Overall elapsed time: %lf\n", elapsedTime(tv_initial_main, tv_final_main));debugMessage(debugMsg, par);
-
+    sprintf(debugMsg, "This run was executed with the following configuration:\n "
+    		"file: %s, cache enabled: %d, max iterations: %d debug info: %d, global FO printing: %d, candidates list: %d, N: %d predictor: %d",
+    		par.filename,
+    		par.cache,
+			par.maxIterations,
+			par.debug,
+			par.globalFOcalculation,
+			par.K,
+			par.number,
+			par.predictor
+    );debugMessage(debugMsg, par);
     // This return code is tested by the caller
     // Any value different than 0 will fire an exception
     return 0;

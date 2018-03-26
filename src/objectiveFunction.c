@@ -19,7 +19,6 @@
 #include <string.h>
 #include <math.h>
 #include <omp.h>
-#include <mpi.h>
 #include <sys/time.h>
 
 #include "objectiveFunction.h"
@@ -77,9 +76,12 @@ double ObjFunctionComponent(sConfiguration *configuration, MYSQL *conn, sApplica
 		exit(-1);
 	}
 
+	int mode;
+
+	if (par.numberOfThreads == 0) mode = SINGLE_THREAD; else mode = MULTI_THREAD;
 	/* The memory pattern can be anything such as "*" */
-	pointer->R_d = atof(invokePredictor( configuration, conn, 1, pointer->currentCores_d, "*", pointer->datasetSize,
-			pointer->session_app_id, pointer->app_id, pointer->stage, par,RESIDUAL_EXECUTION_TIME));
+	pointer->R_d = atof(invokePredictor( configuration, conn, pointer->currentCores_d,
+			pointer->session_app_id, pointer->app_id, pointer->stage, par, WHOLE_EXECUTION_TIME, pointer->luafilename, pointer->results, mode));
 	//printf("ObjFunctionComponent: App_id %s w %f R %d D %d nCores %d newCores %d\n",pointer->app_id, pointer->w, pointer->R, pointer->D, pointer->cores, pointer->newCores);
 
 	/* Determine how the obj function needs to be calculated */

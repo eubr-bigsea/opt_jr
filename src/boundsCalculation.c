@@ -18,7 +18,6 @@
 #include <string.h>
 #include <math.h>
 #include <omp.h>
-#include <mpi.h>
 #include <sys/time.h>
 
 #include "boundsCalculation.h"
@@ -39,7 +38,7 @@ void  Bound(sConfiguration *configuration, MYSQL *conn, sApplication * pointer, 
 	int BCores = 0;
 	int STEP = pointer->V;
 	int nCores;
-	int nNodes = 1; // Temporary fix
+
 
 	pointer->currentCores_d = pointer->nCores_DB_d;
 
@@ -48,8 +47,12 @@ void  Bound(sConfiguration *configuration, MYSQL *conn, sApplication * pointer, 
 	pointer->currentCores_d = max( X0, pointer->V);
 
 	nCores = pointer->currentCores_d;
-	predictorOutput = atof(invokePredictor(configuration, conn, nNodes, nCores, "*", pointer->datasetSize, pointer->session_app_id,
-							pointer->app_id, pointer->stage, par, WHOLE_EXECUTION_TIME));
+	int mode;
+
+	if (par.numberOfThreads == 0) mode = SINGLE_THREAD; else mode = MULTI_THREAD;
+
+	predictorOutput = atof(invokePredictor(configuration, conn, nCores, pointer->session_app_id, pointer->app_id, pointer->stage, par,
+			WHOLE_EXECUTION_TIME, pointer->luafilename, pointer->results, mode));
 	sprintf(debugMsg,"Bound evaluation for %s predictorOutput = %lf (deadline is %lf) cores %d\n",  pointer->session_app_id, predictorOutput, pointer->Deadline_d, nCores);debugMessage(debugMsg, par);
 	// Danilo 27/7/2017
 		pointer->sAB.index = 0;
@@ -73,7 +76,8 @@ void  Bound(sConfiguration *configuration, MYSQL *conn, sApplication * pointer, 
 				break;
 			}
 			nCores = nCores + STEP;
-			predictorOutput = atof(invokePredictor(configuration, conn, nNodes, nCores, "*", pointer->datasetSize, pointer->session_app_id, pointer->app_id, pointer->stage,par, WHOLE_EXECUTION_TIME));
+			predictorOutput = atof(invokePredictor(configuration, conn, nCores,  pointer->session_app_id, pointer->app_id, pointer->stage,par,
+					WHOLE_EXECUTION_TIME, pointer->luafilename, pointer->results, mode));
 			sprintf(debugMsg,"Bound evaluation for %s predictorOutput = %lf (deadline is %lf) cores %d\n",  pointer->session_app_id, predictorOutput,pointer->Deadline_d, nCores);debugMessage(debugMsg, par);
 
 			BCores = nCores;
@@ -104,7 +108,8 @@ void  Bound(sConfiguration *configuration, MYSQL *conn, sApplication * pointer, 
 					//leave the while loop
 					break;
 				}
-				predictorOutput = atof(invokePredictor(configuration, conn, nNodes, nCores, "8G", pointer->datasetSize, pointer->session_app_id, pointer->app_id, pointer->stage, par, WHOLE_EXECUTION_TIME));
+				predictorOutput = atof(invokePredictor(configuration, conn,  nCores,  pointer->session_app_id, pointer->app_id,
+						pointer->stage, par, WHOLE_EXECUTION_TIME, pointer->luafilename, pointer->results, mode));
 				sprintf(debugMsg,"Bound evaluation for %s predictorOutput = %lf (deadline is %lf) cores %d\n",  pointer->session_app_id, predictorOutput, pointer->Deadline_d, nCores);debugMessage(debugMsg, par);
 
 				pointer->sAB.vec[pointer->sAB.index].nCores = nCores;
@@ -126,6 +131,51 @@ void  Bound(sConfiguration *configuration, MYSQL *conn, sApplication * pointer, 
 
 
 
+
+
+
+
+
+/*
+ * Name:
+ * Input parameters:
+ * Output parameters:
+ * Description
+*/
+void calculateBounds(sApplication * pointer,  sConfiguration * configuration, MYSQL *conn, struct optJrParameters par)
+{
+	char debugMsg[DEBUG_MSG];
+	char statement[256];
+
+	debugBanner("calculateBounds", par);
+
+	while (pointer != NULL)
+	{
+
+		/* Retrieve the value calculated by OPT_IC from DB */
+		sprintf(debugMsg,"\n calculateBounds invoked for %s %s\n", pointer->session_app_id, pointer->app_id);debugMessage(debugMsg, par);
+		//Retrieve nCores from the DB
+		sprintf(statement,
+                        "select num_cores_opt, num_vm_opt from %s.OPTIMIZER_CONFIGURATION_TABLE where application_id='%s' and dataset_size=%d and deadline=%lf;"
+				, getConfigurationValue(configuration, "DB_dbName"), pointer->app_id, pointer->datasetSize, pointer->Deadline_d);
+
+		MYSQL_ROW row = executeSQL(conn, statement, par);
+		if (row == NULL)
+		{
+			printf("Fatal error: no matches found on OPTIMIZER_CONFIGURATION_TABLE.\nCheck that OPT_IC was run over the specific application.\n");
+			exit(-1);
+		}
+
+		pointer->nCores_DB_d = atoi(row[0]);
+		pointer->vm = atoi(row[1]);
+
+		Bound(configuration, conn, pointer, par);
+		sprintf(debugMsg,"A bound for %s %s has been calculated (%d)", pointer->session_app_id, pointer->app_id, pointer->bound);
+		debugMessage(debugMsg, par);
+		pointer = pointer->next;
+	}
+	debugBanner("Calculate Bounds has ended", par);
+}
 
 /*
  * 		Name:					calculate_Nu
@@ -251,50 +301,4 @@ void calculate_Nu(sConfiguration * configuration, MYSQL *conn, sApplication *fir
 	   }
 	    sprintf(debugMsg,"end calculate nu");debugBanner(debugMsg, par);
 }
-
-/*
- * Name:
- * Input parameters:
- * Output parameters:
- * Description
-*/
-
-
-
-void calculateBounds(sApplication * pointer,  sConfiguration * configuration, MYSQL *conn, struct optJrParameters par)
-{
-	char debugMsg[DEBUG_MSG];
-	char statement[256];
-
-	debugBanner("calculateBounds", par);
-
-	while (pointer != NULL)
-	{
-
-		/* Retrieve the value calculated by OPT_IC from DB */
-		sprintf(debugMsg,"\n calculateBounds %s %s\n", pointer->session_app_id, pointer->app_id);debugMessage(debugMsg, par);
-		//Retrieve nCores from the DB
-		sprintf(statement,
-                        "select num_cores_opt, num_vm_opt from %s.OPTIMIZER_CONFIGURATION_TABLE where application_id='%s' and dataset_size=%d and deadline=%lf;"
-				, getConfigurationValue(configuration, "DB_dbName"), pointer->app_id, pointer->datasetSize, pointer->Deadline_d);
-
-		MYSQL_ROW row = executeSQL(conn, statement, par);
-		if (row == NULL)
-		{
-			printf("Fatal error: no matches found on OPTIMIZER_CONFIGURATION_TABLE.\nCheck that OPT_IC was run over the specific application.\n");
-			exit(-1);
-		}
-
-		pointer->nCores_DB_d = atoi(row[0]);
-		pointer->vm = atoi(row[1]);
-
-		Bound(configuration, conn, pointer, par);
-		sprintf(debugMsg,"A bound for %s %s has been calculated (%d)", pointer->session_app_id, pointer->app_id, pointer->bound);
-		debugMessage(debugMsg, par);
-		pointer = pointer->next;
-	}
-	debugBanner("Calculate Bounds has ended", par);
-}
-
-
 

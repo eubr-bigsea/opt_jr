@@ -34,6 +34,7 @@ struct optJrParameters
 	int number;				/* Number of toal cores available for the applications (N) */
 	int maxIterations;		/* The maximum number of iterations in LocalSearch */
 	int numberOfThreads;	/* The number of MPI threads */
+	char luafile[1024];
 };
 
 
@@ -56,6 +57,7 @@ typedef struct Configuration sConfiguration;
 struct Application
 {
 	/* Static parameters */
+	char results[128];		/* HOME_RESULTS or ALTERNATIVE_HOME_RESULTS */
 	int mode; 				/* How the objective function is calculated (currently redundant) */
 	char * session_app_id;	/* Session identifier */
 	char * app_id;			/* Application identifier */
@@ -71,6 +73,7 @@ struct Application
     double csi;
     char * stage;			/* Application's stage (used in case of residual time) */
     int datasetSize;
+    char luafilename[1024];
 
     /* Dynamic values */
 

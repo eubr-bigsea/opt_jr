@@ -113,7 +113,7 @@ sApplication * parseCsv(sConfiguration *configuration, struct optJrParameters pa
 	        	DatasetSize = 	atoi(getfield(tmp, _Dsz));
 	        	csi = getCsi(M/m, V/v);
 	        	/* Add application parameters to the List */
-	        	addApplication(&first, &current, session_app_id, app_id, w, chi_0, chi_C, m, M, V, v, D, csi, St, DatasetSize);
+	        	addApplication(par, configuration, &first, &current, session_app_id, app_id, w, chi_0, chi_C, M, m, V, v, D, csi, St, DatasetSize);
 	        	rows++;
 	        	free(tmp);
 	        }

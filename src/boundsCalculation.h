@@ -31,7 +31,7 @@ int doubleCompare(double, double);
 
 double getCsi(double , double );
 
-char* invokePredictor(sConfiguration * , MYSQL *, int , int , char * , int ,  char *, char *, char *, struct optJrParameters, int);
+
 
 double max(double, double);
 
