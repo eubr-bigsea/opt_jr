@@ -242,7 +242,7 @@ void calculate_Nu(sConfiguration * configuration, MYSQL *conn, sApplication *fir
 		else /*Any other row */
 		{
 		       csi = getCsi(current->M/current->m, current->V/current->v);
-		       current->term_i = sqrt((current->w/w1)*(current->chi_C/chi_c_1)*(csi_1/csi));
+		       current->term_i = sqrt((current->w/w1)*(current->chi_C/chi_c_1));
 		       tot = tot + current->term_i;
 		      // printf("Calculate_nu  Other rows: %s w %d csi %lf tot %lf\n", current->app_id, current->w, csi, tot);
 		}
@@ -264,7 +264,7 @@ void calculate_Nu(sConfiguration * configuration, MYSQL *conn, sApplication *fir
 		if (rows > 0)
 		{
 			csi = getCsi(current->M/current->m, current->V/current->v);
-			term_j = sqrt((current->w/w1)*(current->chi_C/chi_c_1)*(csi_1/csi));
+			term_j = sqrt((current->w/w1)*(current->chi_C/chi_c_1));
 			tot = tot+ term_j;
 
 		} else rows++;
