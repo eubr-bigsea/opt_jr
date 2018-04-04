@@ -15,7 +15,9 @@ Vagrant.configure("2") do |config|
      apt -y install gcc make openmpi-bin openmpi-doc libopenmpi-dev libmysqlclient-dev
      cd /home/work
      git clone https://github.com/eubr-bigsea/opt_jr
-     cd opt_jr/Release
+     cd opt_jr
+     git checkout wip
+     cd Release
      make
      cd /home/work
      chown -R work:work opt_jr
@@ -39,7 +41,7 @@ Vagrant.configure("2") do |config|
      tar zxvf LogP8_2.tar.gz
      tar zxvf LogP8_3.tar.gz
      tar zxvf LogP8_4.tar.gz
-     cd /howme/work
+     cd /home/work
      chown -R work:work OPT_DATA_CONFIG
      git clone https://github.com/eubr-bigsea/dagSim
      cd dagSim
